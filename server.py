@@ -72,7 +72,8 @@ ENV = load_env()
 if "MONGODB_URI" not in ENV:
     raise RuntimeError("MONGODB_URI no encontrado en variables de entorno o .env")
 
-client = MongoClient(ENV["MONGODB_URI"], serverSelectionTimeoutMS=15000)
+# Lazy connection: no conecta hasta que se usa (evita timeouts al cargar el módulo)
+client = MongoClient(ENV["MONGODB_URI"], serverSelectionTimeoutMS=15000, connect=False)
 db = client["blast-prod"]
 app = FastAPI(title="Blast Tickets Dashboard")
 
