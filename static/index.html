@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Blast Tickets — Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+  :root {
+    --bg: #f6f7f9; --card: #ffffff; --border: #e3e6ea;
+    --text: #16181d; --muted: #6b7280; --accent: #2a78d6;
+    --ok: #1baf7a; --bad: #e34948; --warn: #eda100;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body { font-family: -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); }
+  header {
+    display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+    padding: 16px 24px; background: var(--card); border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; z-index: 10;
+  }
+  header h1 { font-size: 18px; font-weight: 600; margin-right: auto; }
+  select, .pill-group button {
+    font-size: 14px; padding: 8px 12px; border: 1px solid var(--border);
+    border-radius: 8px; background: var(--card); color: var(--text); cursor: pointer;
+  }
+  select { min-width: 220px; }
+  .pill-group { display: flex; }
+  .pill-group button { border-radius: 0; border-right-width: 0; }
+  .pill-group button:first-child { border-radius: 8px 0 0 8px; }
+  .pill-group button:last-child { border-radius: 0 8px 8px 0; border-right-width: 1px; }
+  .pill-group button.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+  #updated { font-size: 12px; color: var(--muted); }
+  main { max-width: 1180px; margin: 0 auto; padding: 24px; }
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; }
+  .kpi { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+  .kpi .lbl { font-size: 12.5px; color: var(--muted); }
+  .kpi .val { font-size: 26px; font-weight: 600; margin-top: 4px; }
+  .kpi .sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .grid2 { display: grid; grid-template-columns: 1.4fr 1fr; gap: 14px; margin-top: 14px; }
+  @media (max-width: 900px) { .grid2 { grid-template-columns: 1fr; } }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 18px; }
+  .card h2 { font-size: 14.5px; font-weight: 600; margin-bottom: 14px; }
+  .chart-wrap { position: relative; height: 260px; }
+  .funnel-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .funnel-row .lbl { width: 130px; font-size: 13px; color: var(--muted); text-align: right; }
+  .funnel-row .bar { height: 26px; border-radius: 0 5px 5px 0; background: var(--accent); min-width: 4px; transition: width .6s ease; }
+  .funnel-row .num { font-size: 13px; font-weight: 600; white-space: nowrap; }
+  .funnel-row .num small { color: var(--muted); font-weight: 400; }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  td, th { padding: 8px 6px; border-bottom: 1px solid var(--border); text-align: left; }
+  th { color: var(--muted); font-weight: 500; font-size: 12.5px; }
+  td:last-child, th:last-child { text-align: right; }
+  .empty { color: var(--muted); font-size: 13px; padding: 20px 0; text-align: center; }
+  .live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); display: inline-block; margin-right: 6px; animation: pulse 1.6s infinite; }
+  @keyframes pulse { 50% { opacity: .3; } }
+  .feed { max-height: 300px; overflow-y: auto; }
+  .feed-item { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .feed-item .when { color: var(--muted); font-size: 12px; min-width: 62px; }
+  .badge { font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 600; }
+  .b-ok { background: #e3f6ee; color: #0d7a54; }
+  .b-bad { background: #fdeaea; color: #a32d2d; }
+  .b-neutral { background: #eef0f3; color: #52606d; }
+  .b-warn { background: #fdf3dd; color: #8a5b06; }
+  .clarity-note { font-size: 12px; color: var(--muted); margin-top: 10px; }
+  .mini-funnel { display: flex; gap: 10px; margin-top: 12px; }
+  .mini-stage { flex: 1; background: var(--bg); border-radius: 8px; padding: 10px; text-align: center; }
+  .mini-stage .n { font-size: 20px; font-weight: 600; }
+  .mini-stage .l { font-size: 11.5px; color: var(--muted); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Blast Tickets — panel por merchant</h1>
+  <select id="merchant"></select>
+  <div class="pill-group" id="period">
+    <button data-h="24">Hoy (24 h)</button>
+    <button data-h="168" class="on">7 días</button>
+    <button data-h="720">30 días</button>
+  </div>
+  <span id="updated">cargando…</span>
+</header>
+<main>
+
+  <div class="card" style="margin-bottom:14px">
+    <h2>🔍 Medir resultados de una UTM</h2>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+      <input id="utmq" placeholder="Pega aquí el link con UTM o escribe el utm_source (ej: juan-perez)" style="flex:1;min-width:260px;font-size:14px;padding:9px 12px;border:1px solid var(--border);border-radius:8px">
+      <button id="utmbuscar" style="font-size:14px;padding:9px 16px;border:1px solid var(--accent);border-radius:8px;background:var(--accent);color:#fff;cursor:pointer">Buscar</button>
+    </div>
+    <div id="utmresultado" style="margin-top:12px"></div>
+    <details style="margin-top:12px">
+      <summary style="font-size:13px;color:var(--muted);cursor:pointer" id="utmtoplabel">Ver ranking de las UTMs activas</summary>
+      <div style="max-height:320px;overflow-y:auto">
+        <table id="utmtop" style="margin-top:8px"></table>
+      </div>
+    </details>
+    <div class="clarity-note" id="utmfooter"></div>
+  </div>
+
+  <div class="grid2" style="margin-top:0">
+    <div class="card">
+      <h2><span class="live-dot"></span>Embudo en vivo — última hora</h2>
+      <div id="livefunnel"></div>
+      <div class="clarity-note" id="livenote"></div>
+    </div>
+    <div class="card">
+      <h2><span class="live-dot"></span>Actividad en tiempo real</h2>
+      <div class="feed" id="feed"></div>
+    </div>
+  </div>
+
+  <div class="kpis" id="kpis" style="margin-top:14px"></div>
+
+  <div class="card" style="margin-top:14px">
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <h2 style="margin:0">🎯 Carritos abandonados con datos de comprador — lista de ataque</h2>
+      <button id="csvbtn" style="margin-left:auto;font-size:13px;padding:6px 12px;border:1px solid var(--border);border-radius:8px;background:var(--card);cursor:pointer">Descargar CSV</button>
+    </div>
+    <div class="kpis" id="abkpis" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin-top:14px"></div>
+    <div style="max-height:420px;overflow-y:auto;margin-top:10px">
+      <table id="abtable"></table>
+    </div>
+    <div class="clarity-note">Compradores que llenaron sus datos en el checkout y no completaron el pago, ordenados por valor. Un mismo email aparece una vez (su carrito de mayor valor).</div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h2>Ingresos y órdenes aprobadas</h2>
+      <div class="chart-wrap"><canvas id="serie"></canvas></div>
+    </div>
+    <div class="card">
+      <h2>Funnel de compra (periodo seleccionado)</h2>
+      <div id="funnel"></div>
+      <h2 style="margin-top:20px">Por qué se pierden los carritos</h2>
+      <div class="chart-wrap" style="height:170px"><canvas id="abandono"></canvas></div>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h2>Comportamiento web — Clarity (últimos 3 días)</h2>
+      <div class="kpis" id="claritykpis" style="grid-template-columns:repeat(auto-fit,minmax(120px,1fr))"></div>
+      <div class="mini-funnel" id="clarityfunnel"></div>
+      <div class="clarity-note" id="claritynote"></div>
+    </div>
+    <div class="card">
+      <h2>Métodos de pago — aprobados vs fallidos</h2>
+      <div class="chart-wrap"><canvas id="metodos"></canvas></div>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h2>🌎 Mapa de calor — sesiones por ciudad</h2>
+      <div id="mapa" style="height:360px;border-radius:8px"></div>
+      <div class="clarity-note" id="geonote"></div>
+    </div>
+    <div class="card">
+      <h2>Ranking de ciudades</h2>
+      <div style="max-height:390px;overflow-y:auto">
+        <table id="geotable"></table>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="card" style="grid-column:1/-1">
+      <h2>📱 Tecnología — dispositivos, navegadores y sistemas</h2>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:24px;margin-top:6px">
+        <div><h3 style="font-size:13px;color:var(--muted);font-weight:500;margin-bottom:10px">Tipo de dispositivo</h3><div id="techdev"></div></div>
+        <div><h3 style="font-size:13px;color:var(--muted);font-weight:500;margin-bottom:10px">Navegador</h3><div id="techbro"></div></div>
+        <div><h3 style="font-size:13px;color:var(--muted);font-weight:500;margin-bottom:10px">Sistema operativo</h3><div id="techos"></div></div>
+      </div>
+      <div class="clarity-note" id="technote"></div>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="card" style="grid-column:1/-1">
+      <h2>Top eventos por boletas emitidas <small style="color:var(--muted);font-weight:400">(clic en un evento para ver su ficha)</small></h2>
+      <div id="topeventos"></div>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="card" style="grid-column:1/-1">
+      <h2>🎫 Ficha por evento — histórico completo</h2>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+        <select id="evmerchant" style="min-width:200px"></select>
+        <select id="evsel" style="flex:1;min-width:260px"></select>
+      </div>
+      <div id="evdetalle"><div class="empty">Selecciona un evento (los pasados están marcados 🏁)</div></div>
+    </div>
+  </div>
+</main>
+<script>
+let hours = 168, charts = {};
+const $ = (id) => document.getElementById(id);
+const fmt = new Intl.NumberFormat("es-CO");
+const money = (v) => "$" + fmt.format(Math.round(v));
+
+async function loadMerchants() {
+  const list = await (await fetch("/api/merchants")).json();
+  const opts = list.map(m => `<option value="${m.ref}" ${m.active ? "" : "disabled"}>${m.name}${m.active ? "" : " (inactivo)"}</option>`).join("");
+  $("merchant").innerHTML = '<option value="ALL">Todos los merchants</option>' + opts;
+  $("evmerchant").innerHTML = '<option value="ALL">Eventos de todos los merchants</option>' +
+    list.filter(m => m.active).map(m => `<option value="${m.ref}">${m.name}</option>`).join("");
+}
+
+function kpiCard(lbl, val, sub) {
+  return `<div class="kpi"><div class="lbl">${lbl}</div><div class="val">${val}</div>${sub ? `<div class="sub">${sub}</div>` : ""}</div>`;
+}
+
+function funnelHTML(stages, color) {
+  const max = Math.max(...stages.map(f => f.n), 1);
+  return stages.map((f, i) => {
+    const pct = stages[0].n ? (f.n / stages[0].n * 100) : 0;
+    return `<div class="funnel-row">
+      <div class="lbl">${f.etapa}</div>
+      <div style="flex:1"><div class="bar" style="width:${Math.max(f.n / max * 100, 1)}%; opacity:${1 - i * 0.25}; ${color ? "background:" + color : ""}"></div></div>
+      <div class="num">${fmt.format(f.n)} <small>${pct.toFixed(1)}%</small></div>
+    </div>`;
+  }).join("");
+}
+
+function mkChart(id, cfg) {
+  if (charts[id]) charts[id].destroy();
+  charts[id] = new Chart($(id), cfg);
+}
+
+const BADGES = {
+  APPROVED: "b-ok", VALIDATED: "b-ok",
+  DECLINED: "b-bad", REJECTED: "b-bad", ERROR: "b-bad", PAYMENT_FAILED: "b-bad", BACKEND_ERROR: "b-bad",
+  "CREATED-TIME-STARTED": "b-neutral", "CREATED-TIME-OUT": "b-warn", DELETED_BY_USER: "b-warn",
+  "WAITING-PAYMENT-RESPONSE": "b-neutral", PENDING: "b-neutral",
+};
+const NICE = {
+  APPROVED: "aprobado", VALIDATED: "validado", DECLINED: "rechazado", REJECTED: "rechazado",
+  ERROR: "error", PAYMENT_FAILED: "pago falló", BACKEND_ERROR: "error", PENDING: "pendiente",
+  "CREATED-TIME-STARTED": "navegando", "CREATED-TIME-OUT": "expiró", DELETED_BY_USER: "abandonado",
+  "WAITING-PAYMENT-RESPONSE": "esperando pago",
+};
+
+async function refreshLive() {
+  const ref = $("merchant").value || "ALL";
+  const d = await (await fetch(`/api/live?merchant=${ref}&minutes=60`)).json();
+  $("livefunnel").innerHTML = funnelHTML(d.funnel, "#1baf7a");
+  $("livenote").textContent = "Se actualiza cada 15 segundos · ventana de 60 minutos";
+  $("feed").innerHTML = d.feed.length ? d.feed.map(f => {
+    const mins = Math.max(0, Math.round((Date.now() - new Date(f.t).getTime()) / 60000));
+    const badge = BADGES[f.estado] || "b-neutral";
+    const estado = NICE[f.estado] || (f.estado || "").toLowerCase();
+    const icon = f.tipo === "pago" ? "💳" : "🛒";
+    return `<div class="feed-item">
+      <span class="when">${mins === 0 ? "ahora" : "hace " + mins + " min"}</span>
+      <span>${icon}</span>
+      <span style="flex:1">${f.merchant}${f.metodo ? " · " + f.metodo : ""}${f.monto ? " · " + money(f.monto) : ""}</span>
+      <span class="badge ${badge}">${estado}</span>
+    </div>`;
+  }).join("") : '<div class="empty">Sin actividad en la última hora</div>';
+}
+
+async function refreshClarity() {
+  const ref = $("merchant").value || "ALL";
+  const d = await (await fetch(`/api/clarity?merchant=${ref}`)).json();
+  if (!d.data) {
+    $("claritykpis").innerHTML = "";
+    $("clarityfunnel").innerHTML = "";
+    $("claritynote").textContent = "Sin datos de Clarity para este merchant (dominio: " + (d.domain || "desconocido") + ")";
+    return;
+  }
+  const c = d.data;
+  $("claritykpis").innerHTML =
+    kpiCard("Sesiones", fmt.format(c.sesiones)) +
+    kpiCard("Usuarios", fmt.format(c.usuarios)) +
+    kpiCard("Dead clicks", fmt.format(c.dead_clicks), c.sesiones ? (c.dead_clicks / c.sesiones * 100).toFixed(1) + "% de sesiones" : "") +
+    kpiCard("Rage clicks", fmt.format(c.rage_clicks)) +
+    kpiCard("Errores JS", fmt.format(c.errores_js));
+  const stages = [
+    { l: "Sesiones", n: c.sesiones },
+    { l: "Llegan a checkout", n: c.checkout },
+    { l: "Compran", n: c.compra },
+  ];
+  $("clarityfunnel").innerHTML = stages.map((s, i) => {
+    const pct = stages[0].n ? (s.n / stages[0].n * 100).toFixed(1) : "0";
+    return `<div class="mini-stage"><div class="n">${fmt.format(s.n)}</div><div class="l">${s.l}${i ? " · " + pct + "%" : ""}</div></div>`;
+  }).join("");
+  const age = d.stale_horas ? `hace ${d.stale_horas} h` : "recién";
+  $("claritynote").textContent = `Dominio: ${d.domain} · actualizado ${age}` +
+    (d.auto_refresh ? " · refresco automático activo" : " · refresco manual (configura CLARITY_API_TOKEN para automatizarlo)");
+}
+
+async function copyText(t) {
+  try { await navigator.clipboard.writeText(t); return true; }
+  catch (e) {
+    const ta = document.createElement("textarea");
+    ta.value = t; document.body.appendChild(ta); ta.select();
+    const ok = document.execCommand("copy"); ta.remove(); return ok;
+  }
+}
+
+function utmStatsCards(r) {
+  return `<div class="kpis" style="grid-template-columns:repeat(auto-fit,minmax(130px,1fr))">` +
+    kpiCard("Sesiones", fmt.format(r.sesiones)) +
+    kpiCard("Checkouts", fmt.format(r.checkout), r.tasa_checkout + "% de las sesiones") +
+    kpiCard("Compras", fmt.format(r.compra), r.tasa_compra + "% de las sesiones") +
+    `</div>`;
+}
+
+async function buscarUtm(q) {
+  const ref = $("merchant").value || "ALL";
+  const r = await fetch(`/api/utm/buscar?q=${encodeURIComponent(q)}&merchant=${ref}`);
+  if (!r.ok) { $("utmresultado").innerHTML = `<div class="empty">⚠️ ${(await r.json()).detail || "error"}</div>`; return; }
+  const d = await r.json();
+  const c = d.consulta;
+  let html = `<div style="font-size:12.5px;color:var(--muted);margin-bottom:8px">Buscando:
+    ${c.source ? `<span class="badge b-neutral">utm_source = ${c.source}</span>` : ""}
+    ${c.medium ? `<span class="badge b-neutral">utm_medium = ${c.medium}</span>` : ""}
+    ${c.campaign ? `<span class="badge b-neutral">utm_campaign = ${c.campaign}</span>` : ""}
+    <span class="badge b-ok">en ${d.ambito}</span></div>`;
+
+  if (d.source) {
+    html += utmStatsCards(d.source);
+  } else if (c.source) {
+    html += `<div class="empty" style="text-align:left;padding:8px 0">Sin tráfico registrado para <b>${c.source}</b> en los últimos ${d.days} días.
+      ${d.similares.length ? "¿Será alguno de estos?" : "Si el link acaba de empezar a circular, dale unas horas."}</div>`;
+  }
+  if (d.similares.length) {
+    html += `<table style="margin-top:8px"><tr><th>Sources parecidos</th><th style="text-align:right">Sesiones</th><th style="text-align:right">Checkouts</th><th style="text-align:right">Compras</th></tr>` +
+      d.similares.map(s => `<tr>
+        <td><a href="#" class="utmsim" data-s="${s.nombre}" style="color:var(--accent)">${s.nombre}</a></td>
+        <td style="text-align:right">${fmt.format(s.sesiones)}</td>
+        <td style="text-align:right">${fmt.format(s.checkout)}</td>
+        <td style="text-align:right;font-weight:600">${fmt.format(s.compra)}</td>
+      </tr>`).join("") + "</table>";
+  }
+  if (d.campaign) {
+    html += `<div style="font-size:13px;margin-top:10px">Campaña <b>${d.campaign.nombre}</b>: ${fmt.format(d.campaign.sesiones)} sesiones (Clarity no conserva checkout/compra por campaña).</div>`;
+  }
+  $("utmresultado").innerHTML = html;
+}
+
+async function refreshUtmTop() {
+  const ref = $("merchant").value || "ALL";
+  const d = await (await fetch(`/api/utm/top?merchant=${ref}&limit=30`)).json();
+  $("utmtoplabel").textContent = `Ver ranking de las UTMs activas (${d.ambito})`;
+  $("utmtop").innerHTML = d.top.length
+    ? `<tr><th>#</th><th>utm_source</th><th style="text-align:right">Sesiones</th><th style="text-align:right">Checkouts</th><th style="text-align:right">Compras</th><th style="text-align:right">Conv. compra</th></tr>` +
+      d.top.map((s, i) => `<tr>
+        <td style="color:var(--muted)">${i + 1}</td>
+        <td><a href="#" class="utmsim" data-s="${s.nombre}" style="color:var(--accent)">${s.nombre}</a></td>
+        <td style="text-align:right">${fmt.format(s.sesiones)}</td>
+        <td style="text-align:right">${fmt.format(s.checkout)}</td>
+        <td style="text-align:right;font-weight:600">${fmt.format(s.compra)}</td>
+        <td style="text-align:right">${s.tasa_compra}%</td>
+      </tr>`).join("")
+    : '<tr><td class="empty">Sin tráfico con UTM registrado para este merchant en los últimos días</td></tr>';
+  const age = d.updated ? Math.round((Date.now() - new Date(d.updated).getTime()) / 3600000) : null;
+  $("utmfooter").textContent = `Métricas de Clarity de los últimos ${d.days} días${age !== null ? " · actualizadas hace " + age + " h" : ""} · un utm_source nuevo tarda unas horas en aparecer.`;
+}
+
+$("utmbuscar").addEventListener("click", () => { const q = $("utmq").value.trim(); if (q) buscarUtm(q); });
+$("utmq").addEventListener("keydown", (e) => { if (e.key === "Enter") { const q = $("utmq").value.trim(); if (q) buscarUtm(q); } });
+document.addEventListener("click", (e) => {
+  const a = e.target.closest(".utmsim");
+  if (a) { e.preventDefault(); $("utmq").value = a.dataset.s; buscarUtm(a.dataset.s); window.scrollTo({top: 0, behavior: "smooth"}); }
+});
+
+let abandonadosData = [];
+
+async function refreshAbandonados() {
+  const ref = $("merchant").value || "ALL";
+  const d = await (await fetch(`/api/abandonados?merchant=${ref}&hours=${hours}`)).json();
+  const r = d.resumen;
+  abandonadosData = d.lista;
+  $("abkpis").innerHTML =
+    kpiCard("Carritos abandonados", fmt.format(r.carritos_abandonados), "en el periodo seleccionado") +
+    kpiCard("Valor abandonado", money(r.valor_abandonado)) +
+    kpiCard("Compradores contactables", fmt.format(r.compradores_contactables), "dejaron email y celular") +
+    kpiCard("Valor contactable", money(r.valor_contactable), "recuperable con remarketing");
+  renderAbandonados();
+}
+
+let abSort = { key: "valor", dir: -1 };
+
+function renderAbandonados() {
+  const lista = [...abandonadosData].sort((a, b) => {
+    const va = abSort.key === "cuando" ? new Date(a.cuando).getTime() : a.valor;
+    const vb = abSort.key === "cuando" ? new Date(b.cuando).getTime() : b.valor;
+    return (va - vb) * abSort.dir;
+  });
+  const arrow = (k) => abSort.key === k ? (abSort.dir === -1 ? " ▼" : " ▲") : " ↕";
+  $("abtable").innerHTML = lista.length
+    ? `<tr>
+        <th>Comprador</th><th>Contacto</th><th>Evento</th><th>Estado</th>
+        <th data-sort="cuando" style="cursor:pointer;white-space:nowrap;user-select:none">Cuándo${arrow("cuando")}</th>
+        <th style="text-align:right">Boletas</th>
+        <th data-sort="valor" style="cursor:pointer;text-align:right;white-space:nowrap;user-select:none">Valor${arrow("valor")}</th>
+      </tr>` +
+      lista.map(x => {
+        const mins = Math.round((Date.now() - new Date(x.cuando).getTime()) / 60000);
+        const when = mins < 60 ? `hace ${mins} min` : mins < 1440 ? `hace ${Math.round(mins/60)} h` : `hace ${Math.round(mins/1440)} d`;
+        const badge = BADGES[x.estado] || "b-neutral";
+        const estado = NICE[x.estado] || (x.estado || "").toLowerCase();
+        return `<tr>
+          <td>${x.nombre || "—"}${x.intentos > 1 ? ` <span class="badge b-warn">${x.intentos} intentos</span>` : ""}<br><small style="color:var(--muted)">${x.merchant}</small></td>
+          <td style="font-size:12.5px">${x.email}<br>${x.celular || ""}</td>
+          <td style="max-width:220px">${x.evento}</td>
+          <td><span class="badge ${badge}">${estado}</span></td>
+          <td style="white-space:nowrap">${when}</td>
+          <td style="text-align:right">${x.boletas}</td>
+          <td style="text-align:right;font-weight:600">${money(x.valor)}</td>
+        </tr>`;
+      }).join("")
+    : '<tr><td class="empty">Sin carritos abandonados con datos de contacto en este periodo</td></tr>';
+}
+
+$("abtable").addEventListener("click", (e) => {
+  const th = e.target.closest("th[data-sort]");
+  if (!th) return;
+  const k = th.dataset.sort;
+  abSort = { key: k, dir: abSort.key === k ? -abSort.dir : -1 };
+  renderAbandonados();
+});
+
+$("csvbtn").addEventListener("click", () => {
+  if (!abandonadosData.length) return;
+  const esc = (v) => '"' + String(v ?? "").replace(/"/g, '""') + '"';
+  const rows = [["nombre","email","celular","evento","merchant","estado","fecha","boletas","valor","intentos"]]
+    .concat(abandonadosData.map(x => [x.nombre, x.email, x.celular, x.evento, x.merchant, x.estado, x.cuando, x.boletas, Math.round(x.valor), x.intentos]));
+  const csv = "﻿" + rows.map(r => r.map(esc).join(";")).join("\n");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+  a.download = `carritos_abandonados_${$("merchant").value}_${hours}h.csv`;
+  a.click();
+});
+
+async function refresh() {
+  const ref = $("merchant").value || "ALL";
+  const d = await (await fetch(`/api/dashboard?merchant=${ref}&hours=${hours}`)).json();
+  const k = d.kpis;
+
+  $("kpis").innerHTML =
+    kpiCard("Ingresos", money(k.ingresos)) +
+    kpiCard("Órdenes aprobadas", fmt.format(k.ordenes)) +
+    kpiCard("Ticket promedio", money(k.ticket_promedio)) +
+    kpiCard("Boletas emitidas", fmt.format(k.boletas_emitidas)) +
+    kpiCard("Conversión carrito", k.conversion_carrito.toFixed(1) + "%", "carritos que terminan en compra") +
+    kpiCard("Fallo de pago", k.tasa_fallo_pago.toFixed(1) + "%", "intentos declinados o con error");
+
+  $("funnel").innerHTML = funnelHTML(d.funnel);
+
+  mkChart("serie", {
+    type: "bar",
+    data: {
+      labels: d.serie.map(s => s.fecha.slice(5)),
+      datasets: [{ label: "Ingresos", data: d.serie.map(s => s.ingresos), backgroundColor: "#2a78d6", borderRadius: 3 }],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => money(c.raw) } } },
+      scales: { y: { ticks: { callback: v => "$" + fmt.format(v) } } },
+    },
+  });
+
+  const ab = d.abandono;
+  mkChart("abandono", {
+    type: "doughnut",
+    data: {
+      labels: ["Expiró el tiempo", "Borrado por usuario", "Pago fallido"],
+      datasets: [{ data: [ab.expirado, ab.borrado_por_usuario, ab.pago_fallido], backgroundColor: ["#9aa3af", "#eda100", "#e34948"] }],
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: "right", labels: { boxWidth: 12, font: { size: 11.5 } } } } },
+  });
+
+  mkChart("metodos", {
+    type: "bar",
+    data: {
+      labels: d.metodos.map(m => m.metodo),
+      datasets: [
+        { label: "Aprobados", data: d.metodos.map(m => m.aprobados), backgroundColor: "#1baf7a", borderRadius: 3 },
+        { label: "Fallidos", data: d.metodos.map(m => m.fallidos), backgroundColor: "#e34948", borderRadius: 3 },
+      ],
+    },
+    options: {
+      indexAxis: "y", responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: "top", labels: { boxWidth: 12 } } },
+    },
+  });
+
+  $("topeventos").innerHTML = d.top_eventos.length
+    ? `<table><tr><th>Evento</th><th>Boletas</th></tr>` +
+      d.top_eventos.map(e => `<tr data-evid="${e.id || ""}" style="cursor:pointer"><td style="color:var(--accent)">${e.evento}</td><td>${fmt.format(e.tickets)}</td></tr>`).join("") + "</table>"
+    : '<div class="empty">Sin boletas emitidas en este periodo</div>';
+
+  $("updated").textContent = "Actualizado " + new Date().toLocaleTimeString("es-CO");
+}
+
+const CITY_COORDS = {
+  "Bogotá": [4.711, -74.072], "Medellín": [6.244, -75.581], "Ibagué": [4.438, -75.232],
+  "Cali": [3.451, -76.532], "Cartagena": [10.391, -75.479], "Tunja": [5.544, -73.357],
+  "Barranquilla": [10.968, -74.781], "Rionegro": [6.155, -75.374], "Soacha": [4.579, -74.217],
+  "Bucaramanga": [7.119, -73.122], "Armenia": [4.535, -75.675], "Neiva": [2.927, -75.281],
+  "Pereira": [4.813, -75.696], "Manizales": [5.070, -75.513], "Chía": [4.861, -74.032],
+  "Palmira": [3.539, -76.303], "Zipaquirá": [5.022, -74.004], "Santa Marta": [11.240, -74.199],
+  "Valledupar": [10.463, -73.253], "Duitama": [5.826, -73.033], "Madrid": [4.732, -74.264],
+  "Mosquera": [4.706, -74.230], "Bello": [6.337, -75.555], "Envigado": [6.175, -75.591],
+  "Itagüí": [6.184, -75.599], "Popayán": [2.444, -76.614], "Sogamoso": [5.714, -72.933],
+  "Paipa": [5.780, -73.117], "Puerto Salgar": [5.465, -74.653], "Florencia": [1.614, -75.606],
+  "La Dorada": [5.449, -74.664], "Fusagasugá": [4.337, -74.364], "Remedios": [7.028, -74.694],
+  "Saravena": [6.955, -71.873], "Girardot": [4.303, -74.803], "Villavicencio": [4.142, -73.626],
+  "Cúcuta": [7.894, -72.508], "Pasto": [1.209, -77.277], "Montería": [8.748, -75.881],
+  "Sincelejo": [9.305, -75.398], "Soledad": [10.917, -74.765], "Tumaco": [1.799, -78.764],
+  "San José del Guaviare": [2.573, -72.646], "Cajicá": [4.919, -74.028], "Facatativá": [4.812, -74.355],
+  "Dallas": [32.777, -96.797], "Brisbane": [-27.470, 153.026], "Phoenix": [33.448, -112.074],
+  "Lilburn": [33.890, -84.143], "Concepción de la Vega": [19.222, -70.529],
+  "Kennedy": [4.628, -74.157], "Fontibón": [4.678, -74.141], "Suba": [4.744, -74.083],
+  "Engativá": [4.707, -74.114], "Bosa": [4.618, -74.177], "Usaquén": [4.695, -74.031],
+  "Ciudad Bolívar": [4.558, -74.156], "Chapinero": [4.646, -74.063], "Teusaquillo": [4.643, -74.093],
+};
+
+let mapa = null, mapaCapas = null;
+
+function heatColor(v, max) {
+  const t = Math.sqrt(v / max);
+  if (t > 0.75) return "#d03b3b";
+  if (t > 0.5) return "#ec835a";
+  if (t > 0.25) return "#fab219";
+  return "#2a78d6";
+}
+
+async function refreshGeo() {
+  const ref = $("merchant").value || "ALL";
+  const d = await (await fetch(`/api/geo?merchant=${ref}`)).json();
+  const conMapa = d.ciudades.filter(c => CITY_COORDS[c.ciudad]);
+  const sinMapa = d.ciudades.filter(c => !CITY_COORDS[c.ciudad] && c.ciudad !== "(sin ciudad)");
+
+  if (!mapa) {
+    mapa = L.map("mapa", { scrollWheelZoom: false }).setView([5.5, -74.3], 5);
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: '© OpenStreetMap', maxZoom: 12,
+    }).addTo(mapa);
+    mapaCapas = L.layerGroup().addTo(mapa);
+  }
+  mapaCapas.clearLayers();
+  const max = Math.max(...conMapa.map(c => c.sesiones), 1);
+  conMapa.forEach(c => {
+    const r = 6 + Math.sqrt(c.sesiones / max) * 26;
+    L.circleMarker(CITY_COORDS[c.ciudad], {
+      radius: r, color: heatColor(c.sesiones, max), weight: 1.5,
+      fillColor: heatColor(c.sesiones, max), fillOpacity: 0.55,
+    }).bindTooltip(`<b>${c.ciudad}</b><br>${fmt.format(c.sesiones)} sesiones<br>${fmt.format(c.checkout)} checkouts · ${fmt.format(c.compra)} compras`)
+      .addTo(mapaCapas);
+  });
+
+  $("geotable").innerHTML = d.ciudades.length
+    ? `<tr><th>#</th><th>Ciudad</th><th style="text-align:right">Sesiones</th><th style="text-align:right">Checkouts</th><th style="text-align:right">Compras</th><th style="text-align:right">Conv.</th></tr>` +
+      d.ciudades.map((c, i) => `<tr>
+        <td style="color:var(--muted)">${i + 1}</td>
+        <td>${c.ciudad}${CITY_COORDS[c.ciudad] ? "" : " <small style='color:var(--muted)'>(fuera del mapa)</small>"}</td>
+        <td style="text-align:right">${fmt.format(c.sesiones)}</td>
+        <td style="text-align:right">${fmt.format(c.checkout)}</td>
+        <td style="text-align:right;font-weight:600">${fmt.format(c.compra)}</td>
+        <td style="text-align:right">${c.tasa_compra}%</td>
+      </tr>`).join("")
+    : '<tr><td class="empty">Sin datos de ciudades para este merchant</td></tr>';
+
+  const age = d.updated ? Math.round((Date.now() - new Date(d.updated).getTime()) / 3600000) : null;
+  $("geonote").textContent = `Ámbito: ${d.ambito} · Clarity, últimos ${d.days} días${age !== null ? " · actualizado hace " + age + " h" : ""} · máxima granularidad disponible: localidades, sectores y municipios tal como los reporta Clarity.`;
+}
+
+function barList(items, color) {
+  const max = Math.max(...items.map(x => x.sesiones), 1);
+  const total = items.reduce((a, x) => a + x.sesiones, 0);
+  return items.slice(0, 10).map(x => `
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+      <div style="width:118px;font-size:12.5px;color:var(--text);text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${x.nombre}">${x.nombre}</div>
+      <div style="flex:1"><div style="width:${Math.max(x.sesiones / max * 100, 2)}%;height:16px;border-radius:0 4px 4px 0;background:${color}"></div></div>
+      <div style="width:86px;font-size:12px;font-weight:600;white-space:nowrap">${fmt.format(x.sesiones)} <small style="color:var(--muted);font-weight:400">${total ? (x.sesiones / total * 100).toFixed(1) : 0}%</small></div>
+    </div>`).join("") || '<div class="empty">Sin datos</div>';
+}
+
+async function refreshTech() {
+  const ref = $("merchant").value || "ALL";
+  const d = await (await fetch(`/api/tech?merchant=${ref}`)).json();
+  $("techdev").innerHTML = barList(d.dispositivos, "#2a78d6");
+  $("techbro").innerHTML = barList(d.navegadores, "#1baf7a");
+  $("techos").innerHTML = barList(d.sistemas, "#7f77dd");
+  const age = d.updated ? Math.round((Date.now() - new Date(d.updated).getTime()) / 3600000) : null;
+  $("technote").textContent = `Ámbito: ${d.ambito} · sesiones por dimensión, Clarity últimos ${d.days} días${age !== null ? " · actualizado hace " + age + " h" : ""} · "WebView (in-app)" = navegador embebido de apps como Instagram/Facebook.`;
+}
+
+async function refreshEventosLista() {
+  const ref = $("evmerchant").value || "ALL";
+  const evs = await (await fetch(`/api/eventos?merchant=${ref}`)).json();
+  $("evsel").innerHTML = `<option value="">— Elige un evento (${evs.length}) —</option>` +
+    evs.map(e => {
+      const f = e.inicio ? e.inicio.slice(0, 10) : "";
+      return `<option value="${e.id}">${e.pasado ? "🏁 " : "🟢 "}${e.titulo}${f ? " · " + f : ""}${ref === "ALL" && e.merchant ? " · " + e.merchant : ""}</option>`;
+    }).join("");
+}
+
+$("evmerchant").addEventListener("change", refreshEventosLista);
+
+async function loadEvento(id) {
+  if (!id) return;
+  $("evdetalle").innerHTML = '<div class="empty">Cargando ficha…</div>';
+  const r = await fetch(`/api/evento?id=${id}`);
+  if (!r.ok) { $("evdetalle").innerHTML = '<div class="empty">⚠️ No se pudo cargar el evento</div>'; return; }
+  const d = await r.json();
+  const k = d.kpis;
+  const fechas = `${d.inicio ? d.inicio.slice(0, 16).replace("T", " ") : "?"} → ${d.fin ? d.fin.slice(0, 16).replace("T", " ") : "?"}`;
+  const perdidoTotal = d.perdido.expirado + d.perdido.borrado + d.perdido.pago_fallido;
+
+  $("evdetalle").innerHTML = `
+    <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+      <span style="font-size:16px;font-weight:600">${d.titulo}</span>
+      <span class="badge ${d.pasado ? "b-neutral" : "b-ok"}">${d.pasado ? "finalizado" : "activo"}</span>
+      <span style="font-size:12.5px;color:var(--muted)">${d.merchant} · ${fechas}</span>
+    </div>
+    <div class="kpis" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr))">
+      ${kpiCard("Ingresos", money(k.ingresos))}
+      ${kpiCard("Órdenes", fmt.format(k.ordenes))}
+      ${kpiCard("Boletas vendidas", fmt.format(k.boletas_vendidas), fmt.format(k.canceladas) + " canceladas")}
+      ${kpiCard("Validadas en puerta", fmt.format(k.validadas_en_puerta), k.asistencia_pct.toFixed(0) + "% asistencia")}
+      ${kpiCard("Conversión carrito", k.conversion_carrito.toFixed(1) + "%")}
+      ${kpiCard("Fallo de pago", k.tasa_fallo_pago.toFixed(1) + "%")}
+    </div>
+    <div class="grid2" style="margin-top:14px">
+      <div>
+        <h2 style="font-size:14px;font-weight:600;margin-bottom:10px">Curva de ventas</h2>
+        <div class="chart-wrap" style="height:200px"><canvas id="evserie"></canvas></div>
+        <h2 style="font-size:14px;font-weight:600;margin:16px 0 10px">Funnel del evento</h2>
+        <div id="evfunnel"></div>
+        <div style="font-size:12.5px;color:var(--muted);margin-top:8px">
+          💸 Dinero perdido: expiró ${money(d.perdido.expirado)} · abandonó ${money(d.perdido.borrado)} · pago falló ${money(d.perdido.pago_fallido)} · total <b>${money(perdidoTotal)}</b>
+        </div>
+      </div>
+      <div>
+        <h2 style="font-size:14px;font-weight:600;margin-bottom:10px">Ocupación por localidad</h2>
+        <div style="max-height:220px;overflow-y:auto">
+        <table>
+          <tr><th>Localidad</th><th style="text-align:right">Precio</th><th style="text-align:right">Vendidas</th><th style="text-align:right">Cupos rest.</th></tr>
+          ${d.localidades.map(l => `<tr><td style="max-width:180px">${l.localidad}</td><td style="text-align:right">${money(l.precio)}</td><td style="text-align:right;font-weight:600">${fmt.format(l.vendidas)}</td><td style="text-align:right">${l.cupos_restantes ?? "—"}</td></tr>`).join("")}
+        </table>
+        </div>
+        <h2 style="font-size:14px;font-weight:600;margin:16px 0 10px">Métodos de pago</h2>
+        <table>
+          <tr><th>Método</th><th style="text-align:right">Aprobados</th><th style="text-align:right">Fallidos</th></tr>
+          ${d.metodos.map(m => `<tr><td>${m.metodo}</td><td style="text-align:right;color:var(--ok);font-weight:600">${fmt.format(m.aprobados)}</td><td style="text-align:right;color:var(--bad)">${fmt.format(m.fallidos)}</td></tr>`).join("") || '<tr><td class="empty">Sin intentos de pago</td></tr>'}
+        </table>
+        <h2 style="font-size:14px;font-weight:600;margin:16px 0 10px">🌎 De dónde viene el tráfico del evento</h2>
+        <div style="max-height:240px;overflow-y:auto">${d.ciudades.length
+          ? `<table>
+              <tr><th>Ciudad</th><th style="text-align:right">Sesiones</th><th style="text-align:right">Compras aprobadas</th><th style="text-align:right">Conv.</th></tr>` +
+              d.ciudades.map(c => `<tr>
+                <td>${c.ciudad}</td>
+                <td style="text-align:right">${fmt.format(c.sesiones)}</td>
+                <td style="text-align:right;font-weight:600;color:${c.compras ? "var(--ok)" : "var(--muted)"}">${fmt.format(c.compras)}</td>
+                <td style="text-align:right;color:var(--muted)">${c.sesiones ? (c.compras / c.sesiones * 100).toFixed(1) : 0}%</td>
+              </tr>`).join("") + "</table>"
+          : '<div class="empty" style="text-align:left;padding:4px 0">Sin tráfico web en los últimos ' + d.ciudades_days + ' días (Clarity solo conserva el comportamiento reciente; para eventos pasados esta capa ya no está disponible)</div>'}</div>
+        ${d.ciudades.length ? `<div style="font-size:11.5px;color:var(--muted);margin-top:6px">Sesiones y compras en la página del evento por ciudad · Clarity últimos ${d.ciudades_days} días · compras por ciudad cubiertas: Bogotá, Medellín, Ibagué, Tunja y Cartagena (~80% del total)</div>` : ""}
+      </div>
+    </div>`;
+
+  $("evfunnel").innerHTML = funnelHTML(d.funnel);
+  mkChart("evserie", {
+    type: "bar",
+    data: {
+      labels: d.serie.map(s => s.fecha.slice(5)),
+      datasets: [{ label: "Ingresos", data: d.serie.map(s => s.ingresos), backgroundColor: "#2a78d6", borderRadius: 3 }],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => money(c.raw) } } },
+      scales: { y: { ticks: { callback: v => "$" + fmt.format(v) } } },
+    },
+  });
+}
+
+$("evsel").addEventListener("change", () => loadEvento($("evsel").value));
+
+$("topeventos").addEventListener("click", (e) => {
+  const tr = e.target.closest("tr[data-evid]");
+  if (!tr) return;
+  $("evsel").value = tr.dataset.evid;
+  loadEvento(tr.dataset.evid);
+  $("evsel").scrollIntoView({ behavior: "smooth", block: "center" });
+});
+
+function refreshAll() {
+  refresh(); refreshLive(); refreshClarity(); refreshAbandonados(); refreshUtmTop(); refreshGeo(); refreshTech(); refreshEventosLista();
+  const q = $("utmq").value.trim();
+  if (q) buscarUtm(q);
+}
+
+$("merchant").addEventListener("change", () => {
+  const v = $("merchant").value;
+  if ([...$("evmerchant").options].some(o => o.value === v)) $("evmerchant").value = v;
+  refreshAll();
+});
+$("period").addEventListener("click", (e) => {
+  const b = e.target.closest("button");
+  if (!b) return;
+  hours = +b.dataset.h;
+  document.querySelectorAll("#period button").forEach(x => x.classList.toggle("on", x === b));
+  refresh();
+  refreshAbandonados();
+});
+
+(async () => {
+  await loadMerchants();
+  refreshAll();
+  setInterval(refresh, 60000);
+  setInterval(refreshLive, 15000);
+  setInterval(refreshClarity, 10 * 60000);
+})();
+</script>
+</body>
+</html>

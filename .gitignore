@@ -1,0 +1,27 @@
+# Entorno
+.env
+.env.local
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Caché local (se refresca desde las APIs)
+clarity_cache.json
+utm_cache.json
+geo_cache.json
+tech_cache.json
+evgeo_cache.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Vercel
+.vercel/
+.vercel
