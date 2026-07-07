@@ -14,6 +14,7 @@ Notas del esquema aprendidas:
 - paymentIntents no tiene campo de fecha.
 """
 import json
+import os
 import time
 import urllib.request
 from datetime import datetime, timedelta, timezone
@@ -53,6 +54,11 @@ MERCHANT_DOMAINS = {
 
 def load_env():
     out = {}
+    # Primero lee desde variables de entorno del sistema (para Vercel)
+    for key in ("MONGODB_URI", "CLARITY_API_TOKEN"):
+        if key in os.environ:
+            out[key] = os.environ[key]
+    # Luego intenta leer archivos .env locales (para desarrollo)
     for env in (BASE / ".env", BASE.parent / ".env"):
         if env.exists():
             for line in env.read_text().splitlines():
@@ -64,7 +70,7 @@ def load_env():
 
 ENV = load_env()
 if "MONGODB_URI" not in ENV:
-    raise RuntimeError("MONGODB_URI no encontrado en .env")
+    raise RuntimeError("MONGODB_URI no encontrado en variables de entorno o .env")
 
 client = MongoClient(ENV["MONGODB_URI"], serverSelectionTimeoutMS=15000)
 db = client["blast-prod"]
