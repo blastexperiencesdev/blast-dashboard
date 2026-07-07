@@ -2,20 +2,24 @@
 import sys
 import os
 from pathlib import Path
+from fastapi import FastAPI
 
-# Debug: muestra variables de entorno
-print("DEBUG: Variables de entorno disponibles:", sorted(os.environ.keys()))
-print("DEBUG: MONGODB_URI present?", "MONGODB_URI" in os.environ)
+# Placeholder: garantiza que 'app' siempre existe para Vercel
+app = FastAPI()
 
 # Añade el directorio padre al path para que pueda importar server.py
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 try:
     from server import app
-    print("DEBUG: server.py importado exitosamente")
 except Exception as e:
     print(f"ERROR importando server.py: {type(e).__name__}: {e}")
-    raise
+    import traceback
+    traceback.print_exc()
 
-# Vercel espera que haya un objeto 'app' o una función ASGI
+    # Si falla, usa un app minimal que muestre el error
+    @app.get("/")
+    def error():
+        return {"error": str(e), "type": type(e).__name__}
+
 __all__ = ["app"]
