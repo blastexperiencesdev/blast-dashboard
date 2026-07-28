@@ -55,7 +55,7 @@ MERCHANT_DOMAINS = {
 def load_env():
     out = {}
     # Primero lee desde variables de entorno del sistema (para Vercel)
-    for key in ("MONGODB_URI", "CLARITY_API_TOKEN"):
+    for key in ("MONGODB_URI", "CLARITY_API_TOKEN", "WATI_API_TOKEN"):
         if key in os.environ:
             out[key] = os.environ[key]
     # Luego intenta leer archivos .env locales (para desarrollo)
@@ -804,6 +804,110 @@ def clarity(merchant: str = "ALL"):
         "auto_refresh": bool(ENV.get("CLARITY_API_TOKEN")),
         "data": data,
     }
+
+
+@app.get("/api/abandoned-carts")
+def abandoned_carts(merchant: str = "ALL", hours: int = 24):
+    since = oid_since(hours)
+    match = {"_id": {"$gte": since}, "status": {"$in": ["CREATED", "CREATED-TIME-OUT"]}}
+    if merchant != "ALL":
+        match["merchantRef"] = merchant
+
+    carts = list(db.carts.aggregate([
+        {"$match": match},
+        {"$sort": {"dateCreation": -1}},
+        {"$limit": 100},
+        {"$project": {
+            "cartId": "$_id",
+            "merchantRef": 1,
+            "buyerName": 1,
+            "buyerEmail": 1,
+            "buyerPhone": 1,
+            "total": 1,
+            "status": 1,
+            "dateCreation": 1,
+            "items": 1,
+            "eventId": 1,
+        }}
+    ]))
+
+    # Enriquecer con datos de eventos
+    event_ids = [ObjectId(c["eventId"]) for c in carts if c.get("eventId") and ObjectId.is_valid(c["eventId"])]
+    events = {str(e["_id"]): e.get("title", "(sin título)") for e in db.events.find({"_id": {"$in": event_ids}}, {"title": 1})} if event_ids else {}
+
+    # Enriquecer con datos de merchants
+    merchant_names_map = {m["ref"]: m.get("name", m["ref"]) for m in db.merchants.find({}, {"ref": 1, "name": 1})}
+
+    result = []
+    for cart in carts:
+        result.append({
+            "cartId": str(cart["cartId"]),
+            "merchantRef": cart["merchantRef"],
+            "merchantName": merchant_names_map.get(cart["merchantRef"], cart["merchantRef"]),
+            "buyerName": cart.get("buyerName", "N/A"),
+            "buyerEmail": cart.get("buyerEmail", ""),
+            "buyerPhone": cart.get("buyerPhone", ""),
+            "total": cart.get("total", 0),
+            "status": cart.get("status", ""),
+            "dateCreation": cart.get("dateCreation", ""),
+            "eventName": events.get(str(cart.get("eventId")), "Evento desconocido"),
+            "items": len(cart.get("items", [])),
+        })
+
+    return {
+        "data": result,
+        "total": len(result),
+        "merchant": merchant,
+        "hours": hours,
+    }
+
+
+@app.post("/api/send-wati-message")
+def send_wati_message(phone: str, name: str, event: str, merchant: str):
+    if not ENV.get("WATI_API_TOKEN"):
+        raise HTTPException(400, "WATI_API_TOKEN no configurado")
+
+    # Limpiar número (remover espacios, guiones, etc.)
+    phone_clean = "".join(c for c in phone if c.isdigit())
+    if not phone_clean.startswith("57"):
+        phone_clean = "57" + phone_clean
+
+    # Mensaje personalizado
+    message = f"Saludos! {name} Mi nombre es Catalina del equipo de Blasttickets! vimos que Intentaste realizar una compra para {event} y no se pudo concretar. ¿Necesitas que te ayude con algo?"
+
+    try:
+        # API de WATI para enviar mensajes
+        url = "https://api.wati.io/api/v1/sendTemplateMessage"
+        headers = {
+            "Authorization": f"Bearer {ENV.get('WATI_API_TOKEN')}",
+            "Content-Type": "application/json",
+        }
+        body = json.dumps({
+            "customParams": {
+                "name": name,
+                "event": event,
+            },
+            "phoneNumber": phone_clean,
+            "templateName": "abandoned_cart",  # O mensaje libre si no hay template
+            "templateParams": [name, event],
+        })
+
+        # Si no funciona con template, intentar enviar mensaje libre
+        if not url.startswith("https"):
+            url = f"https://api.wati.io/api/v1/sendSessionMessage?token={ENV.get('WATI_API_TOKEN')}"
+            body = json.dumps({
+                "phoneNumber": phone_clean,
+                "message": message,
+            })
+
+        req = urllib.request.Request(url, data=body.encode(), headers=headers, method="POST")
+        with urllib.request.urlopen(req, timeout=10) as response:
+            result = json.loads(response.read())
+
+        return {"success": True, "message": "Mensaje enviado", "data": result}
+
+    except Exception as e:
+        raise HTTPException(500, f"Error al enviar mensaje: {str(e)}")
 
 
 @app.get("/")
