@@ -16,6 +16,8 @@ Notas del esquema aprendidas:
 import json
 import os
 import time
+import urllib.error
+import urllib.parse
 import urllib.request
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -24,6 +26,7 @@ from bson import ObjectId
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
 from pymongo import MongoClient
 
 BASE = Path(__file__).resolve().parent
@@ -806,108 +809,52 @@ def clarity(merchant: str = "ALL"):
     }
 
 
-@app.get("/api/abandoned-carts")
-def abandoned_carts(merchant: str = "ALL", hours: int = 24):
-    since = oid_since(hours)
-    match = {"_id": {"$gte": since}, "status": {"$in": ["CREATED", "CREATED-TIME-OUT"]}}
-    if merchant != "ALL":
-        match["merchantRef"] = merchant
+WATI_BASE_URL = "https://live-mt-server.wati.io/10124742"
 
-    carts = list(db.carts.aggregate([
-        {"$match": match},
-        {"$sort": {"dateCreation": -1}},
-        {"$limit": 100},
-        {"$project": {
-            "cartId": "$_id",
-            "merchantRef": 1,
-            "buyerName": 1,
-            "buyerEmail": 1,
-            "buyerPhone": 1,
-            "total": 1,
-            "status": 1,
-            "dateCreation": 1,
-            "items": 1,
-            "eventId": 1,
-        }}
-    ]))
 
-    # Enriquecer con datos de eventos
-    event_ids = [ObjectId(c["eventId"]) for c in carts if c.get("eventId") and ObjectId.is_valid(c["eventId"])]
-    events = {str(e["_id"]): e.get("title", "(sin título)") for e in db.events.find({"_id": {"$in": event_ids}}, {"title": 1})} if event_ids else {}
-
-    # Enriquecer con datos de merchants
-    merchant_names_map = {m["ref"]: m.get("name", m["ref"]) for m in db.merchants.find({}, {"ref": 1, "name": 1})}
-
-    result = []
-    for cart in carts:
-        result.append({
-            "cartId": str(cart["cartId"]),
-            "merchantRef": cart["merchantRef"],
-            "merchantName": merchant_names_map.get(cart["merchantRef"], cart["merchantRef"]),
-            "buyerName": cart.get("buyerName", "N/A"),
-            "buyerEmail": cart.get("buyerEmail", ""),
-            "buyerPhone": cart.get("buyerPhone", ""),
-            "total": cart.get("total", 0),
-            "status": cart.get("status", ""),
-            "dateCreation": cart.get("dateCreation", ""),
-            "eventName": events.get(str(cart.get("eventId")), "Evento desconocido"),
-            "items": len(cart.get("items", [])),
-        })
-
-    return {
-        "data": result,
-        "total": len(result),
-        "merchant": merchant,
-        "hours": hours,
-    }
+class WatiMessageRequest(BaseModel):
+    phone: str
+    name: str
+    event: str
+    merchant: str = ""
 
 
 @app.post("/api/send-wati-message")
-def send_wati_message(phone: str, name: str, event: str, merchant: str):
-    if not ENV.get("WATI_API_TOKEN"):
+def send_wati_message(req: WatiMessageRequest):
+    token = ENV.get("WATI_API_TOKEN")
+    if not token:
         raise HTTPException(400, "WATI_API_TOKEN no configurado")
 
-    # Limpiar número (remover espacios, guiones, etc.)
-    phone_clean = "".join(c for c in phone if c.isdigit())
+    # Limpiar número: solo dígitos, con prefijo de país 57 (Colombia)
+    phone_clean = "".join(c for c in req.phone if c.isdigit())
     if not phone_clean.startswith("57"):
         phone_clean = "57" + phone_clean
 
-    # Mensaje personalizado
-    message = f"Saludos! {name} Mi nombre es Catalina del equipo de Blasttickets! vimos que Intentaste realizar una compra para {event} y no se pudo concretar. ¿Necesitas que te ayude con algo?"
+    name = (req.name or "").strip() or "cliente"
+    message = (
+        f"Saludos! {name} Mi nombre es Catalina del equipo de Blasttickets! "
+        f"vimos que Intentaste realizar una compra para {req.event} y no se pudo concretar. "
+        f"¿Necesitas que te ayude con algo?"
+    )
 
+    url = f"{WATI_BASE_URL}/api/v1/sendSessionMessage/{phone_clean}?messageText={urllib.parse.quote(message)}"
+    request = urllib.request.Request(
+        url,
+        headers={"Authorization": f"Bearer {token}"},
+        method="POST",
+    )
     try:
-        # API de WATI para enviar mensajes
-        url = "https://api.wati.io/api/v1/sendTemplateMessage"
-        headers = {
-            "Authorization": f"Bearer {ENV.get('WATI_API_TOKEN')}",
-            "Content-Type": "application/json",
-        }
-        body = json.dumps({
-            "customParams": {
-                "name": name,
-                "event": event,
-            },
-            "phoneNumber": phone_clean,
-            "templateName": "abandoned_cart",  # O mensaje libre si no hay template
-            "templateParams": [name, event],
-        })
-
-        # Si no funciona con template, intentar enviar mensaje libre
-        if not url.startswith("https"):
-            url = f"https://api.wati.io/api/v1/sendSessionMessage?token={ENV.get('WATI_API_TOKEN')}"
-            body = json.dumps({
-                "phoneNumber": phone_clean,
-                "message": message,
-            })
-
-        req = urllib.request.Request(url, data=body.encode(), headers=headers, method="POST")
-        with urllib.request.urlopen(req, timeout=10) as response:
+        with urllib.request.urlopen(request, timeout=10) as response:
             result = json.loads(response.read())
-
-        return {"success": True, "message": "Mensaje enviado", "data": result}
-
+    except urllib.error.HTTPError as e:
+        raise HTTPException(e.code, f"WATI respondió con error: {e.read().decode()}")
     except Exception as e:
         raise HTTPException(500, f"Error al enviar mensaje: {str(e)}")
+
+    if result.get("result") is False:
+        raise HTTPException(400, result.get("info") or "WATI rechazó el mensaje")
+
+    return {"success": True, "message": "Mensaje enviado", "data": result}
 
 
 @app.get("/")

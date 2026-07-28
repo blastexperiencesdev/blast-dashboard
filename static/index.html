@@ -372,97 +372,103 @@ let abandonadosData = [];
 
 async function refreshAbandonados() {
   const ref = $("merchant").value || "ALL";
-  const d = await (await fetch(`/api/abandoned-carts?merchant=${ref}&hours=${hours}`)).json();
-  abandonadosData = d.data || [];
-  const total_valor = abandonadosData.reduce((s, x) => s + (x.total || 0), 0);
-  const con_contacto = abandonadosData.filter(x => (x.buyerPhone || x.buyerEmail)).length;
-  const valor_contacto = abandonadosData.filter(x => (x.buyerPhone || x.buyerEmail)).reduce((s, x) => s + (x.total || 0), 0);
+  const d = await (await fetch(`/api/abandonados?merchant=${ref}&hours=${hours}`)).json();
+  const r = d.resumen;
+  abandonadosData = d.lista;
   $("abkpis").innerHTML =
-    kpiCard("Carritos abandonados", fmt.format(abandonadosData.length), "en el periodo seleccionado") +
-    kpiCard("Valor abandonado", money(total_valor)) +
-    kpiCard("Compradores contactables", fmt.format(con_contacto), "dejaron email y celular") +
-    kpiCard("Valor contactable", money(valor_contacto), "recuperable con remarketing");
+    kpiCard("Carritos abandonados", fmt.format(r.carritos_abandonados), "en el periodo seleccionado") +
+    kpiCard("Valor abandonado", money(r.valor_abandonado)) +
+    kpiCard("Compradores contactables", fmt.format(r.compradores_contactables), "dejaron email y celular") +
+    kpiCard("Valor contactable", money(r.valor_contactable), "recuperable con remarketing");
   renderAbandonados();
 }
 
 let abSort = { key: "valor", dir: -1 };
+let abandonadosSorted = [];
 
 function renderAbandonados() {
   const lista = [...abandonadosData].sort((a, b) => {
-    const va = abSort.key === "dateCreation" ? new Date(a.dateCreation).getTime() : a.total;
-    const vb = abSort.key === "dateCreation" ? new Date(b.dateCreation).getTime() : b.total;
+    const va = abSort.key === "cuando" ? new Date(a.cuando).getTime() : a.valor;
+    const vb = abSort.key === "cuando" ? new Date(b.cuando).getTime() : b.valor;
     return (va - vb) * abSort.dir;
   });
+  abandonadosSorted = lista;
   const arrow = (k) => abSort.key === k ? (abSort.dir === -1 ? " ▼" : " ▲") : " ↕";
   $("abtable").innerHTML = lista.length
     ? `<tr>
-        <th>Comprador</th><th>Contacto</th><th>Merchant</th><th>Evento</th>
-        <th data-sort="dateCreation" style="cursor:pointer;white-space:nowrap;user-select:none">Cuándo${arrow("dateCreation")}</th>
-        <th style="text-align:right">Items</th>
-        <th data-sort="total" style="cursor:pointer;text-align:right;white-space:nowrap;user-select:none">Valor${arrow("total")}</th>
+        <th>Comprador</th><th>Contacto</th><th>Evento</th><th>Estado</th>
+        <th data-sort="cuando" style="cursor:pointer;white-space:nowrap;user-select:none">Cuándo${arrow("cuando")}</th>
+        <th style="text-align:right">Boletas</th>
+        <th data-sort="valor" style="cursor:pointer;text-align:right;white-space:nowrap;user-select:none">Valor${arrow("valor")}</th>
         <th style="text-align:center">Acción</th>
       </tr>` +
-      lista.map(x => {
-        const mins = Math.round((Date.now() - new Date(x.dateCreation).getTime()) / 60000);
+      lista.map((x, i) => {
+        const mins = Math.round((Date.now() - new Date(x.cuando).getTime()) / 60000);
         const when = mins < 60 ? `hace ${mins} min` : mins < 1440 ? `hace ${Math.round(mins/60)} h` : `hace ${Math.round(mins/1440)} d`;
-        const badge = BADGES[x.status] || "b-neutral";
-        const estado = NICE[x.status] || (x.status || "").toLowerCase();
-        const botón = x.buyerPhone ? `<button onclick="contactarWati('${x.buyerPhone}', '${x.buyerName?.replace(/'/g, "\\'")}', '${x.eventName?.replace(/'/g, "\\'")}', '${x.merchantRef}')" style="font-size:12px;padding:4px 8px;border:1px solid var(--ok);border-radius:6px;background:var(--ok);color:#fff;cursor:pointer;white-space:nowrap">📱 WhatsApp</button>` : "—";
+        const badge = BADGES[x.estado] || "b-neutral";
+        const estado = NICE[x.estado] || (x.estado || "").toLowerCase();
+        const boton = x.celular
+          ? `<button data-i="${i}" class="wati-btn" style="font-size:12px;padding:4px 8px;border:1px solid var(--ok);border-radius:6px;background:var(--ok);color:#fff;cursor:pointer;white-space:nowrap">📱 WhatsApp</button>`
+          : "—";
         return `<tr>
-          <td>${x.buyerName || "—"}<br><small style="color:var(--muted)">${x.buyerEmail || ""}</small></td>
-          <td style="font-size:12.5px">${x.buyerEmail || "—"}<br>${x.buyerPhone || "—"}</td>
-          <td style="font-size:12px">${x.merchantName}</td>
-          <td style="max-width:220px;font-size:12px">${x.eventName}</td>
-          <td style="white-space:nowrap;font-size:12px">${when}</td>
-          <td style="text-align:right">${x.items}</td>
-          <td style="text-align:right;font-weight:600">${money(x.total)}</td>
-          <td style="text-align:center">${botón}</td>
+          <td>${x.nombre || "—"}${x.intentos > 1 ? ` <span class="badge b-warn">${x.intentos} intentos</span>` : ""}<br><small style="color:var(--muted)">${x.merchant}</small></td>
+          <td style="font-size:12.5px">${x.email}<br>${x.celular || ""}</td>
+          <td style="max-width:220px">${x.evento}</td>
+          <td><span class="badge ${badge}">${estado}</span></td>
+          <td style="white-space:nowrap">${when}</td>
+          <td style="text-align:right">${x.boletas}</td>
+          <td style="text-align:right;font-weight:600">${money(x.valor)}</td>
+          <td style="text-align:center">${boton}</td>
         </tr>`;
       }).join("")
     : '<tr><td class="empty" colspan="8">Sin carritos abandonados con datos de contacto en este periodo</td></tr>';
 }
 
-async function contactarWati(phone, name, event, merchant) {
-  if (!phone) {
-    alert("No hay teléfono de contacto");
-    return;
-  }
-
-  const btn = event.target || document.activeElement;
-  const original = btn?.textContent;
-  if (btn) btn.disabled = true;
+async function contactarWati(btn, contacto) {
+  const original = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "Enviando…";
 
   try {
     const res = await fetch("/api/send-wati-message", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ phone, name, event, merchant })
+      body: JSON.stringify({
+        phone: contacto.celular,
+        name: contacto.nombre,
+        event: contacto.evento,
+        merchant: contacto.merchant,
+      }),
     });
 
     if (res.ok) {
-      const data = await res.json();
-      alert(`✓ Mensaje enviado a ${name}`);
-      if (btn) btn.textContent = "✓ Enviado";
+      btn.textContent = "✓ Enviado";
     } else {
       const err = await res.json();
       alert(`Error: ${err.detail || "No se pudo enviar"}`);
+      btn.disabled = false;
+      btn.textContent = original;
     }
   } catch (e) {
     alert(`Error de conexión: ${e.message}`);
-  } finally {
-    if (btn) {
-      btn.disabled = false;
-      if (original) btn.textContent = original;
-    }
+    btn.disabled = false;
+    btn.textContent = original;
   }
 }
 
 $("abtable").addEventListener("click", (e) => {
   const th = e.target.closest("th[data-sort]");
-  if (!th) return;
-  const k = th.dataset.sort;
-  abSort = { key: k, dir: abSort.key === k ? -abSort.dir : -1 };
-  renderAbandonados();
+  if (th) {
+    const k = th.dataset.sort;
+    abSort = { key: k, dir: abSort.key === k ? -abSort.dir : -1 };
+    renderAbandonados();
+    return;
+  }
+  const btn = e.target.closest(".wati-btn");
+  if (btn) {
+    const contacto = abandonadosSorted[+btn.dataset.i];
+    if (contacto) contactarWati(btn, contacto);
+  }
 });
 
 $("csvbtn").addEventListener("click", () => {
