@@ -840,7 +840,12 @@ def send_wati_message(req: WatiMessageRequest):
     url = f"{WATI_BASE_URL}/api/v1/sendSessionMessage/{phone_clean}?messageText={urllib.parse.quote(message)}"
     request = urllib.request.Request(
         url,
-        headers={"Authorization": f"Bearer {token}"},
+        headers={
+            "Authorization": f"Bearer {token}",
+            # Cloudflare (frente al servidor de WATI) bloquea el User-Agent
+            # por defecto de urllib con un 403 "error code: 1010".
+            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
+        },
         method="POST",
     )
     try:
