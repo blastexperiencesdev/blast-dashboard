@@ -21,6 +21,7 @@ import urllib.parse
 import urllib.request
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from typing import Optional
 
 from bson import ObjectId
 from fastapi import FastAPI, HTTPException
@@ -810,6 +811,13 @@ def clarity(merchant: str = "ALL"):
 
 
 WATI_BASE_URL = "https://live-mt-server.wati.io/10124742"
+# Número de WhatsApp Business conectado en WATI (api/v2/whatsapp/phoneNumbers).
+WATI_CHANNEL_NUMBER = "573223763994"
+# Template aprobado por Meta para contactar en frío (sin conversación abierta).
+WATI_RECOVERY_TEMPLATE = "recuperar_carrito_dashboard"
+# Cloudflare (frente al servidor de WATI) bloquea el User-Agent por defecto de
+# urllib con un 403 "error code: 1010".
+WATI_USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"
 
 
 class WatiMessageRequest(BaseModel):
@@ -817,6 +825,17 @@ class WatiMessageRequest(BaseModel):
     name: str
     event: str
     merchant: str = ""
+
+
+def _wati_request(url: str, token: str, body: Optional[bytes] = None) -> dict:
+    request = urllib.request.Request(
+        url,
+        data=body,
+        headers={"Authorization": f"Bearer {token}", "User-Agent": WATI_USER_AGENT},
+        method="POST",
+    )
+    with urllib.request.urlopen(request, timeout=10) as response:
+        return json.loads(response.read())
 
 
 @app.post("/api/send-wati-message")
@@ -837,29 +856,45 @@ def send_wati_message(req: WatiMessageRequest):
         f"¿Necesitas que te ayude con algo concretamente?"
     )
 
-    url = f"{WATI_BASE_URL}/api/v1/sendSessionMessage/{phone_clean}?messageText={urllib.parse.quote(message)}"
-    request = urllib.request.Request(
-        url,
-        headers={
-            "Authorization": f"Bearer {token}",
-            # Cloudflare (frente al servidor de WATI) bloquea el User-Agent
-            # por defecto de urllib con un 403 "error code: 1010".
-            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
-        },
-        method="POST",
-    )
+    # WhatsApp solo permite mensaje libre (sendSessionMessage) si el cliente ya
+    # escribió en las últimas 24h. Lo intentamos primero porque es instantáneo;
+    # si no hay conversación abierta, WATI responde result:false y recurrimos
+    # al template aprobado por Meta (sendTemplateMessage), que sí puede
+    # contactar en frío a cualquier número.
     try:
-        with urllib.request.urlopen(request, timeout=10) as response:
-            result = json.loads(response.read())
+        session_url = (
+            f"{WATI_BASE_URL}/api/v1/sendSessionMessage/{phone_clean}"
+            f"?messageText={urllib.parse.quote(message)}"
+        )
+        result = _wati_request(session_url, token)
+        if result.get("result") is not False:
+            return {"success": True, "message": "Mensaje enviado (conversación activa)", "data": result}
+    except urllib.error.HTTPError:
+        pass  # sin conversación activa: seguimos con el template
+    except Exception as e:
+        raise HTTPException(500, f"Error al enviar mensaje: {str(e)}")
+
+    template_url = f"{WATI_BASE_URL}/api/v2/sendTemplateMessage?whatsappNumber={phone_clean}"
+    body = json.dumps({
+        "template_name": WATI_RECOVERY_TEMPLATE,
+        "broadcast_name": WATI_RECOVERY_TEMPLATE,
+        "channel_number": WATI_CHANNEL_NUMBER,
+        "parameters": [
+            {"name": "1", "value": name},
+            {"name": "2", "value": req.event},
+        ],
+    }).encode()
+    try:
+        result = _wati_request(template_url, token, body)
     except urllib.error.HTTPError as e:
         raise HTTPException(e.code, f"WATI respondió con error: {e.read().decode()}")
     except Exception as e:
         raise HTTPException(500, f"Error al enviar mensaje: {str(e)}")
 
     if result.get("result") is False:
-        raise HTTPException(400, result.get("info") or "WATI rechazó el mensaje")
+        raise HTTPException(400, result.get("error") or result.get("info") or "WATI rechazó el mensaje")
 
-    return {"success": True, "message": "Mensaje enviado", "data": result}
+    return {"success": True, "message": "Mensaje enviado (template)", "data": result}
 
 
 @app.get("/")

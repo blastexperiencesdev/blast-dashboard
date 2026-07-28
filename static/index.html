@@ -39,6 +39,7 @@
   .kpi .val { font-size: 26px; font-weight: 600; margin-top: 4px; }
   .kpi .sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
   .grid2 { display: grid; grid-template-columns: 1.4fr 1fr; gap: 14px; margin-top: 14px; }
+  .grid2 > * { min-width: 0; }
   @media (max-width: 900px) { .grid2 { grid-template-columns: 1fr; } }
   .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 18px; }
   .card h2 { font-size: 14.5px; font-weight: 600; margin-bottom: 14px; }
@@ -48,7 +49,7 @@
   .funnel-row .bar { height: 26px; border-radius: 0 5px 5px 0; background: var(--accent); min-width: 4px; transition: width .6s ease; }
   .funnel-row .num { font-size: 13px; font-weight: 600; white-space: nowrap; }
   .funnel-row .num small { color: var(--muted); font-weight: 400; }
-  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; display: block; overflow-x: auto; max-width: 100%; -webkit-overflow-scrolling: touch; }
   td, th { padding: 8px 6px; border-bottom: 1px solid var(--border); text-align: left; }
   th { color: var(--muted); font-weight: 500; font-size: 12.5px; }
   td:last-child, th:last-child { text-align: right; }
@@ -68,6 +69,12 @@
   .mini-stage { flex: 1; background: var(--bg); border-radius: 8px; padding: 10px; text-align: center; }
   .mini-stage .n { font-size: 20px; font-weight: 600; }
   .mini-stage .l { font-size: 11.5px; color: var(--muted); }
+  @media (max-width: 480px) {
+    main { padding: 14px; }
+    .card { padding: 14px; }
+    header { padding: 12px 14px; }
+    select { min-width: 0; flex: 1 1 auto; }
+  }
 </style>
 </head>
 <body>
