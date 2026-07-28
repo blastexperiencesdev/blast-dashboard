@@ -859,7 +859,13 @@ def send_wati_message(req: WatiMessageRequest):
 
 @app.get("/")
 def index():
-    return FileResponse(BASE / "static" / "index.html")
+    # no-store: Vercel preserva timestamps de archivo entre deploys, así que el
+    # Last-Modified de FileResponse no cambia y el navegador reusa una versión
+    # vieja vía 304 aunque el contenido sí cambió.
+    return FileResponse(
+        BASE / "static" / "index.html",
+        headers={"Cache-Control": "no-store, must-revalidate"},
+    )
 
 
 app.mount("/static", StaticFiles(directory=BASE / "static"), name="static")
