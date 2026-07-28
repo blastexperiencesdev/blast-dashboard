@@ -832,9 +832,9 @@ def send_wati_message(req: WatiMessageRequest):
 
     name = (req.name or "").strip() or "cliente"
     message = (
-        f"Saludos! {name} Mi nombre es Catalina del equipo de Blasttickets! "
+        f"Feliz dia {name}!! Como vas? Mi nombre es Catalina del equipo de Blasttickets! "
         f"vimos que Intentaste realizar una compra para {req.event} y no se pudo concretar. "
-        f"¿Necesitas que te ayude con algo?"
+        f"¿Necesitas que te ayude con algo concretamente?"
     )
 
     url = f"{WATI_BASE_URL}/api/v1/sendSessionMessage/{phone_clean}?messageText={urllib.parse.quote(message)}"

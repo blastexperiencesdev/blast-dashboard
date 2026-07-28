@@ -408,7 +408,7 @@ function renderAbandonados() {
         const badge = BADGES[x.estado] || "b-neutral";
         const estado = NICE[x.estado] || (x.estado || "").toLowerCase();
         const boton = x.celular
-          ? `<button data-i="${i}" class="wati-btn" style="font-size:12px;padding:4px 8px;border:1px solid var(--ok);border-radius:6px;background:var(--ok);color:#fff;cursor:pointer;white-space:nowrap">📱 WhatsApp</button>`
+          ? `<button data-i="${i}" class="wati-btn" style="font-size:12px;padding:4px 8px;border:1px solid var(--ok);border-radius:6px;background:var(--ok);color:#fff;cursor:pointer;white-space:nowrap">📱 Recuperar Carrito (WhatsApp)</button>`
           : "—";
         return `<tr>
           <td>${x.nombre || "—"}${x.intentos > 1 ? ` <span class="badge b-warn">${x.intentos} intentos</span>` : ""}<br><small style="color:var(--muted)">${x.merchant}</small></td>
