@@ -644,11 +644,22 @@ ABANDONED_STATUSES = [
 ]
 
 
+def _extract_assistant(cart: dict) -> dict:
+    td = cart.get("ticketDetails") or []
+    first = td[0] if td and isinstance(td[0], dict) else {}
+    assistants = first.get("assistants")
+    a = assistants[0] if isinstance(assistants, list) and assistants and isinstance(assistants[0], dict) else {}
+    return first, a
+
+
 @app.get("/api/abandonados")
 def abandonados(merchant: str = "ALL", hours: int = 168):
     """Carritos abandonados que dejaron datos de contacto en el formulario de
     asistentes (ticketDetails.assistants). Son la lista de remarketing: alta
-    intención, se les puede escribir o llamar."""
+    intención, se les puede escribir o llamar.
+
+    Excluye a quienes, después de abandonar, sí completaron una compra
+    aprobada (mismo email) — ya no son un lead perdido."""
     if hours not in (24, 168, 720):
         raise HTTPException(400, "hours debe ser 24, 168 o 720")
     since = oid_since(hours)
@@ -671,15 +682,12 @@ def abandonados(merchant: str = "ALL", hours: int = 168):
         sort=[("_id", -1)], limit=1500,
     )
     for c in cursor:
-        td = c.get("ticketDetails") or []
-        first = td[0] if td and isinstance(td[0], dict) else {}
-        assistants = first.get("assistants")
-        a = assistants[0] if isinstance(assistants, list) and assistants and isinstance(assistants[0], dict) else {}
+        first, a = _extract_assistant(c)
         email = (a.get("email") or "").strip().lower()
         if not email or "@" not in email:
             continue
         item = {
-            "cuando": c["_id"].generation_time.isoformat(),
+            "cuando": c["_id"].generation_time,
             "nombre": (a.get("name") or "").strip().title(),
             "email": email,
             "celular": str(a.get("cellphone") or "").strip(),
@@ -698,6 +706,35 @@ def abandonados(merchant: str = "ALL", hours: int = 168):
                 by_email[email] = item
         else:
             by_email[email] = item
+
+    # Quita a quienes ya compraron después de abandonar: mismo email con un
+    # carrito APPROVED cuya fecha sea posterior al intento fallido.
+    if by_email:
+        approved_match = {
+            "_id": {"$gte": since},
+            "status": "APPROVED",
+            "ticketDetails.0": {"$exists": True},
+            **merchant_filter("merchantRef", merchant),
+        }
+        approved_cursor = db.carts.find(
+            approved_match,
+            {"ticketDetails": 1},
+            sort=[("_id", -1)], limit=5000,
+        )
+        recovered_after = {}
+        for c in approved_cursor:
+            _, a = _extract_assistant(c)
+            email = (a.get("email") or "").strip().lower()
+            if email in by_email:
+                ts = c["_id"].generation_time
+                if email not in recovered_after or ts > recovered_after[email]:
+                    recovered_after[email] = ts
+        for email, approved_ts in recovered_after.items():
+            if approved_ts > by_email[email]["cuando"]:
+                del by_email[email]
+
+    for item in by_email.values():
+        item["cuando"] = item["cuando"].isoformat()
 
     # resumen general (con y sin contacto) sobre el mismo periodo
     for r in db.carts.aggregate([
