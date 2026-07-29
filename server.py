@@ -828,12 +828,12 @@ class WatiMessageRequest(BaseModel):
 
 
 def _wati_request(url: str, token: str, body: Optional[bytes] = None) -> dict:
-    request = urllib.request.Request(
-        url,
-        data=body,
-        headers={"Authorization": f"Bearer {token}", "User-Agent": WATI_USER_AGENT},
-        method="POST",
-    )
+    headers = {"Authorization": f"Bearer {token}", "User-Agent": WATI_USER_AGENT}
+    if body is not None:
+        # sendTemplateMessage exige un Content-Type explícito (application/json,
+        # text/json, etc.); sin él responde 415 con cuerpo vacío.
+        headers["Content-Type"] = "application/json"
+    request = urllib.request.Request(url, data=body, headers=headers, method="POST")
     with urllib.request.urlopen(request, timeout=10) as response:
         return json.loads(response.read())
 
