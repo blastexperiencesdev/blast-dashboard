@@ -394,6 +394,19 @@ async function refreshAbandonados() {
 let abSort = { key: "valor", dir: -1 };
 let abandonadosSorted = [];
 
+// Se guarda en el navegador (no en el servidor) para que el estado "ya
+// contactado" sobreviva cambios de filtro y recargas de página.
+const WATI_CONTACTADOS_KEY = "wati_contactados_v1";
+function getContactados() {
+  try { return JSON.parse(localStorage.getItem(WATI_CONTACTADOS_KEY) || "{}"); }
+  catch (e) { return {}; }
+}
+function marcarContactado(email) {
+  const map = getContactados();
+  map[email] = new Date().toISOString();
+  localStorage.setItem(WATI_CONTACTADOS_KEY, JSON.stringify(map));
+}
+
 function renderAbandonados() {
   const lista = [...abandonadosData].sort((a, b) => {
     const va = abSort.key === "cuando" ? new Date(a.cuando).getTime() : a.valor;
@@ -401,6 +414,7 @@ function renderAbandonados() {
     return (va - vb) * abSort.dir;
   });
   abandonadosSorted = lista;
+  const contactados = getContactados();
   const arrow = (k) => abSort.key === k ? (abSort.dir === -1 ? " ▼" : " ▲") : " ↕";
   $("abtable").innerHTML = lista.length
     ? `<tr>
@@ -415,9 +429,18 @@ function renderAbandonados() {
         const when = mins < 60 ? `hace ${mins} min` : mins < 1440 ? `hace ${Math.round(mins/60)} h` : `hace ${Math.round(mins/1440)} d`;
         const badge = BADGES[x.estado] || "b-neutral";
         const estado = NICE[x.estado] || (x.estado || "").toLowerCase();
-        const boton = x.celular
-          ? `<button data-i="${i}" class="wati-btn" style="font-size:12px;padding:4px 8px;border:1px solid var(--ok);border-radius:6px;background:var(--ok);color:#fff;cursor:pointer;white-space:nowrap">📱 Recuperar Carrito (WhatsApp)</button>`
-          : "—";
+        const contactadoEn = contactados[x.email];
+        let boton;
+        if (!x.celular) {
+          boton = "—";
+        } else if (contactadoEn) {
+          const cmins = Math.round((Date.now() - new Date(contactadoEn).getTime()) / 60000);
+          const cwhen = cmins < 60 ? `hace ${cmins} min` : cmins < 1440 ? `hace ${Math.round(cmins/60)} h` : `hace ${Math.round(cmins/1440)} d`;
+          boton = `<div style="font-size:11.5px;color:var(--ok);font-weight:600;white-space:nowrap">✓ Contactado ${cwhen}</div>
+            <button data-i="${i}" class="wati-btn" style="font-size:11px;padding:2px 8px;border:1px solid var(--border);border-radius:6px;background:var(--card);color:var(--muted);cursor:pointer;margin-top:4px">Reenviar</button>`;
+        } else {
+          boton = `<button data-i="${i}" class="wati-btn" style="font-size:12px;padding:4px 8px;border:1px solid var(--ok);border-radius:6px;background:var(--ok);color:#fff;cursor:pointer;white-space:nowrap">📱 Recuperar Carrito (WhatsApp)</button>`;
+        }
         return `<tr>
           <td>${x.nombre || "—"}${x.intentos > 1 ? ` <span class="badge b-warn">${x.intentos} intentos</span>` : ""}<br><small style="color:var(--muted)">${x.merchant}</small></td>
           <td style="font-size:12.5px">${x.email}<br>${x.celular || ""}</td>
@@ -450,7 +473,8 @@ async function contactarWati(btn, contacto) {
     });
 
     if (res.ok) {
-      btn.textContent = "✓ Enviado";
+      marcarContactado(contacto.email);
+      renderAbandonados();
     } else {
       const err = await res.json();
       alert(`Error: ${err.detail || "No se pudo enviar"}`);
