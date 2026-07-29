@@ -380,7 +380,10 @@ let abandonadosData = [];
 
 async function refreshAbandonados() {
   const ref = $("merchant").value || "ALL";
-  const d = await (await fetch(`/api/abandonados?merchant=${ref}&hours=${hours}`)).json();
+  const [d] = await Promise.all([
+    (await fetch(`/api/abandonados?merchant=${ref}&hours=${hours}`)).json(),
+    fetchContactados(),
+  ]);
   const r = d.resumen;
   abandonadosData = d.lista;
   $("abkpis").innerHTML =
@@ -394,17 +397,27 @@ async function refreshAbandonados() {
 let abSort = { key: "valor", dir: -1 };
 let abandonadosSorted = [];
 
-// Se guarda en el navegador (no en el servidor) para que el estado "ya
-// contactado" sobreviva cambios de filtro y recargas de página.
-const WATI_CONTACTADOS_KEY = "wati_contactados_v1";
-function getContactados() {
-  try { return JSON.parse(localStorage.getItem(WATI_CONTACTADOS_KEY) || "{}"); }
-  catch (e) { return {}; }
+// Compartido entre todo el equipo: vive en el servidor (Vercel KV), no en el
+// navegador, para que el estado "ya contactado" sea el mismo sin importar
+// quién ni desde dónde entre al dashboard.
+let contactadosCache = {};
+async function fetchContactados() {
+  try {
+    const r = await fetch("/api/contactados");
+    contactadosCache = r.ok ? await r.json() : {};
+  } catch (e) {
+    contactadosCache = {};
+  }
 }
-function marcarContactado(email) {
-  const map = getContactados();
-  map[email] = new Date().toISOString();
-  localStorage.setItem(WATI_CONTACTADOS_KEY, JSON.stringify(map));
+async function marcarContactado(email) {
+  contactadosCache[email] = new Date().toISOString(); // optimista
+  try {
+    await fetch("/api/contactados", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+  } catch (e) { /* queda marcado localmente aunque falle la red */ }
 }
 
 function renderAbandonados() {
@@ -414,7 +427,7 @@ function renderAbandonados() {
     return (va - vb) * abSort.dir;
   });
   abandonadosSorted = lista;
-  const contactados = getContactados();
+  const contactados = contactadosCache;
   const arrow = (k) => abSort.key === k ? (abSort.dir === -1 ? " ▼" : " ▲") : " ↕";
   $("abtable").innerHTML = lista.length
     ? `<tr>
@@ -473,7 +486,7 @@ async function contactarWati(btn, contacto) {
     });
 
     if (res.ok) {
-      marcarContactado(contacto.email);
+      await marcarContactado(contacto.email);
       renderAbandonados();
     } else {
       const err = await res.json();
@@ -793,6 +806,7 @@ $("period").addEventListener("click", (e) => {
   await loadMerchants();
   refreshAll();
   setInterval(refresh, 60000);
+  setInterval(refreshAbandonados, 60000);
   setInterval(refreshLive, 15000);
   setInterval(refreshClarity, 10 * 60000);
 })();

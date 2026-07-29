@@ -59,7 +59,10 @@ MERCHANT_DOMAINS = {
 def load_env():
     out = {}
     # Primero lee desde variables de entorno del sistema (para Vercel)
-    for key in ("MONGODB_URI", "CLARITY_API_TOKEN", "WATI_API_TOKEN"):
+    for key in (
+        "MONGODB_URI", "CLARITY_API_TOKEN", "WATI_API_TOKEN",
+        "KV_REST_API_URL", "KV_REST_API_TOKEN",
+    ):
         if key in os.environ:
             out[key] = os.environ[key]
     # Luego intenta leer archivos .env locales (para desarrollo)
@@ -932,6 +935,46 @@ def send_wati_message(req: WatiMessageRequest):
         raise HTTPException(400, result.get("error") or result.get("info") or "WATI rechazó el mensaje")
 
     return {"success": True, "message": "Mensaje enviado (template)", "data": result}
+
+
+CONTACTADOS_HASH_KEY = "wati_contactados"
+
+
+def _kv_command(*parts) -> object:
+    base = ENV.get("KV_REST_API_URL")
+    token = ENV.get("KV_REST_API_TOKEN")
+    if not base or not token:
+        raise HTTPException(500, "KV_REST_API_URL/KV_REST_API_TOKEN no configurados")
+    url = base.rstrip("/") + "/" + "/".join(urllib.parse.quote(str(p), safe="") for p in parts)
+    request = urllib.request.Request(url, headers={"Authorization": f"Bearer {token}"})
+    with urllib.request.urlopen(request, timeout=8) as response:
+        return json.loads(response.read())["result"]
+
+
+class MarcarContactadoRequest(BaseModel):
+    email: str
+
+
+@app.get("/api/contactados")
+def get_contactados():
+    """Mapa compartido email -> fecha ISO de último contacto por WhatsApp.
+    Vive en Vercel KV (Redis), no en Mongo (solo lectura), para que todo el
+    equipo vea el mismo estado sin importar desde qué navegador entren."""
+    try:
+        flat = _kv_command("hgetall", CONTACTADOS_HASH_KEY) or []
+    except Exception:
+        return {}
+    return dict(zip(flat[0::2], flat[1::2]))
+
+
+@app.post("/api/contactados")
+def marcar_contactado(req: MarcarContactadoRequest):
+    email = req.email.strip().lower()
+    if not email:
+        raise HTTPException(400, "email requerido")
+    ts = datetime.now(timezone.utc).isoformat()
+    _kv_command("hset", CONTACTADOS_HASH_KEY, email, ts)
+    return {"success": True, "email": email, "ts": ts}
 
 
 @app.get("/")
