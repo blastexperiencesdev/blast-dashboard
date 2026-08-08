@@ -977,6 +977,220 @@ def marcar_contactado(req: MarcarContactadoRequest):
     return {"success": True, "email": email, "ts": ts}
 
 
+# ---------------------------------------------------------------------------
+# Auditoría de tickets (integridad carrito <-> tickets emitidos)
+#
+# El dashboard NO calcula nada: solo lee audit_cache.json, que genera
+# tools/ticket_audit/backfill.py --cache. La lógica de clasificación vive en un
+# único lugar (tools/ticket_audit/detector.py) para que backfill, export y esta
+# vista nunca puedan divergir.
+#
+# Las resoluciones (resuelto / falso positivo) se guardan en Vercel KV, igual
+# que los contactados. Nunca tocan la data de negocio: marcar algo aquí no
+# modifica ni un ticket.
+# ---------------------------------------------------------------------------
+
+AUDIT_CACHE = BASE / "audit_cache.json"
+AUDIT_CACHE_KEY = "ticket_audit_cache"
+AUDIT_RESOLUTIONS_KEY = "ticket_audit_resolutions"
+AUDIT_RESOLUTIONS_FILE = BASE / "audit_resolutions.json"
+_audit_cache_mem = {"ts": 0.0, "data": None}
+
+
+def _leer_audit_cache() -> dict:
+    """El barrido corre en GitHub Actions cada hora y deja el resultado en KV,
+    así que el tablero se actualiza sin desplegar. El archivo en disco queda
+    como respaldo para desarrollo local y para el primer arranque."""
+    if time.time() - _audit_cache_mem["ts"] < 60 and _audit_cache_mem["data"]:
+        return _audit_cache_mem["data"]
+
+    data = None
+    if ENV.get("KV_REST_API_URL") and ENV.get("KV_REST_API_TOKEN"):
+        try:
+            crudo = _kv_command("get", AUDIT_CACHE_KEY)
+            if crudo:
+                data = json.loads(crudo)
+        except Exception:
+            data = None
+    if data is None and AUDIT_CACHE.exists():
+        data = json.loads(AUDIT_CACHE.read_text())
+    if data is None:
+        raise HTTPException(
+            503,
+            "Aún no se ha corrido el barrido. Ejecuta: "
+            "python3 tools/ticket_audit/alerta.py --refrescar-cache",
+        )
+    _audit_cache_mem.update(ts=time.time(), data=_sin_datos_personales(data))
+    return _audit_cache_mem["data"]
+
+
+#: Campos de comprador que jamás deben salir por la API: el tablero es público.
+_PII = {"identification", "name", "email", "cellphone", "asistente", "identificacion"}
+
+
+def _sin_datos_personales(cache: dict) -> dict:
+    """Barrido defensivo. El detector ya no propaga la cédula, pero un caché
+    generado por una versión anterior sí puede traerla y este tablero se sirve
+    sin autenticación."""
+    for inc in cache.get("incidencias", []):
+        for campo in list(inc):
+            if campo.lower() in _PII:
+                inc.pop(campo, None)
+        for grupo in inc.get("duplicateGroups") or []:
+            for campo in list(grupo):
+                if campo.lower() in _PII:
+                    grupo.pop(campo, None)
+    return cache
+
+
+def _audit_resolutions() -> dict:
+    """Mapa paymentReference -> resolución. Usa KV si está configurado; si no
+    (desarrollo local), un JSON en disco."""
+    if ENV.get("KV_REST_API_URL") and ENV.get("KV_REST_API_TOKEN"):
+        try:
+            flat = _kv_command("hgetall", AUDIT_RESOLUTIONS_KEY) or []
+            return {k: json.loads(v) for k, v in zip(flat[0::2], flat[1::2])}
+        except Exception:
+            return {}
+    if AUDIT_RESOLUTIONS_FILE.exists():
+        try:
+            return json.loads(AUDIT_RESOLUTIONS_FILE.read_text())
+        except Exception:
+            return {}
+    return {}
+
+
+def _save_resolution(reference: str, payload: dict) -> None:
+    if ENV.get("KV_REST_API_URL") and ENV.get("KV_REST_API_TOKEN"):
+        _kv_command("hset", AUDIT_RESOLUTIONS_KEY, reference, json.dumps(payload))
+        return
+    data = _audit_resolutions()
+    data[reference] = payload
+    AUDIT_RESOLUTIONS_FILE.write_text(json.dumps(data, ensure_ascii=False, indent=1))
+
+
+@app.get("/api/auditoria")
+def auditoria(merchant: str = "ALL", estado: str = "TODOS", severidad: str = "TODAS",
+              desde: str = "", hasta: str = "", q: str = "", ver: str = "abiertas"):
+    """Incidencias de auditoría con filtros. Todo se resuelve sobre el cache."""
+    cache = _leer_audit_cache()
+    resoluciones = _audit_resolutions()
+
+    filas = []
+    for inc in cache.get("incidencias", []):
+        ref = inc.get("paymentReference")
+        inc["resolucion"] = resoluciones.get(ref)
+        if ver == "abiertas" and inc["resolucion"]:
+            continue
+        if ver == "resueltas" and not inc["resolucion"]:
+            continue
+        if merchant != "ALL" and inc.get("merchantRef") != merchant:
+            continue
+        if estado != "TODOS" and inc.get("status") != estado:
+            continue
+        if severidad != "TODAS" and inc.get("severity") != severidad:
+            continue
+        fecha = (inc.get("createdAtLast") or "")[:10]
+        if desde and fecha and fecha < desde:
+            continue
+        if hasta and fecha and fecha > hasta:
+            continue
+        if q:
+            needle = q.strip().lower()
+            campos = " ".join(str(inc.get(k) or "") for k in
+                              ("paymentReference", "merchantRef", "merchantName",
+                               "eventName", "cartId"))
+            if needle not in campos.lower():
+                continue
+        filas.append(inc)
+
+    over = [f for f in filas if f.get("status") == "OVER_ISSUED"]
+    return {
+        "updated": cache.get("updated"),
+        "window": cache.get("window"),
+        "totalesGlobales": cache.get("totals", {}),
+        "porDia": cache.get("porDia", []),
+        "kpis": {
+            "incidencias": len(filas),
+            "ticketsEnExceso": sum(f.get("delta") or 0 for f in over),
+            "valorFacialExpuesto": round(sum(f.get("exposedAmount") or 0 for f in over)),
+            "merchantsAfectados": len({f.get("merchantRef") for f in filas}),
+            "criticas": sum(1 for f in filas if f.get("severity") == "critical"),
+            "resueltas": sum(1 for f in filas if f.get("resolucion")),
+        },
+        "incidencias": filas,
+    }
+
+
+@app.get("/api/auditoria/csv")
+def auditoria_csv(merchant: str = "ALL", estado: str = "TODOS", severidad: str = "TODAS",
+                  desde: str = "", hasta: str = "", q: str = "", ver: str = "abiertas"):
+    data = auditoria(merchant, estado, severidad, desde, hasta, q, ver)
+    cols = ["paymentReference", "status", "severity", "merchantRef", "merchantName",
+            "eventName", "expectedTickets", "actualTickets", "delta", "amountPaid",
+            "exposedAmount", "paymentMethod", "createdAtFirst", "createdAtLast",
+            "createdAtSpread", "cartId", "cartStatus", "reason"]
+    def cell(value):
+        # `or ""` convertiría un 0 legítimo (ej. spread de 0 s) en celda vacía.
+        if value is None:
+            return ""
+        return str(value).replace(";", ",").replace("\n", " ")
+
+    lines = [";".join(cols)]
+    for inc in data["incidencias"]:
+        lines.append(";".join(cell(inc.get(c)) for c in cols))
+    from fastapi.responses import Response
+    return Response(
+        "﻿" + "\n".join(lines),
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": 'attachment; filename="auditoria_tickets.csv"'},
+    )
+
+
+class ResolverIncidenciaRequest(BaseModel):
+    paymentReference: str
+    resolucion: str  # "resuelto" | "falso_positivo" | "reabrir"
+    nota: str = ""
+    usuario: str = ""
+
+
+@app.post("/api/auditoria/resolver")
+def resolver_incidencia(req: ResolverIncidenciaRequest):
+    """Marca una incidencia. SOLO afecta el registro de auditoría: no toca
+    tickets, carritos ni pagos."""
+    ref = req.paymentReference.strip()
+    if not ref:
+        raise HTTPException(400, "paymentReference requerido")
+    if req.resolucion not in ("resuelto", "falso_positivo", "reabrir"):
+        raise HTTPException(400, "resolucion inválida")
+
+    if req.resolucion == "reabrir":
+        data = _audit_resolutions()
+        data.pop(ref, None)
+        if ENV.get("KV_REST_API_URL") and ENV.get("KV_REST_API_TOKEN"):
+            _kv_command("hdel", AUDIT_RESOLUTIONS_KEY, ref)
+        else:
+            AUDIT_RESOLUTIONS_FILE.write_text(json.dumps(data, ensure_ascii=False, indent=1))
+        return {"success": True, "paymentReference": ref, "resolucion": None}
+
+    payload = {
+        "resolucion": req.resolucion,
+        "nota": req.nota.strip(),
+        "usuario": req.usuario.strip() or "equipo",
+        "ts": datetime.now(timezone.utc).isoformat(),
+    }
+    _save_resolution(ref, payload)
+    return {"success": True, "paymentReference": ref, **payload}
+
+
+@app.get("/auditoria")
+def auditoria_page():
+    return FileResponse(
+        BASE / "static" / "auditoria.html",
+        headers={"Cache-Control": "no-store, must-revalidate"},
+    )
+
+
 @app.get("/")
 def index():
     # no-store: Vercel preserva timestamps de archivo entre deploys, así que el

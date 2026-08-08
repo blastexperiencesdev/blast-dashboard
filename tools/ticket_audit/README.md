@@ -1,0 +1,170 @@
+# Auditoría de integridad Carts ↔ Tickets
+
+Detecta referencias de pago donde la cantidad de tickets emitidos no coincide con lo que
+el carrito compró. Nace de un caso real: en agosto de 2026 se emitieron más de 2.500
+boletas de más sobre compras web.
+
+**La herramienta es de solo lectura sobre la data de negocio.** No borra, no modifica y no
+corrige tickets. Lo único que escribe es su propio caché (`audit_cache.json`) y las
+resoluciones del dashboard. Corregir la data es siempre una decisión humana.
+
+## Piezas
+
+| Archivo | Qué hace |
+|---|---|
+| `detector.py` | Motor de detección. Única fuente de la lógica de clasificación. |
+| `backfill.py` | Barrido histórico por CLI + genera el caché del dashboard. |
+| `export_excel.py` | Reporte en Excel de los casos de sobre-emisión. |
+| `test_detector.py` | 24 tests de la clasificación, con fixtures de cada caso y de los falsos positivos. |
+
+La vista vive en el dashboard (`~/blast-dashboard`), en `/auditoria`. El dashboard **no
+calcula nada**: solo lee el caché. Así el barrido, el Excel y la pantalla no pueden
+divergir.
+
+## Cómo correr el barrido
+
+```bash
+python3 tools/ticket_audit/backfill.py --days 90 --cache
+```
+
+Toma unos 40 segundos para 90 días. Refresca lo que ve el dashboard. Opciones:
+
+| Flag | Para qué |
+|---|---|
+| `--from` / `--to` | Rango explícito (`YYYY-MM-DD`). Por defecto, `--days 90`. |
+| `--merchant BL001` | Filtrar un merchant. Por defecto, todos. |
+| `--cart-status APPROVED` | Solo carritos aprobados. |
+| `--batch-days 15` | Tamaño del lote. Procesa por ventanas, no carga los 90 días en RAM. |
+| `--sleep 2` | Pausa entre lotes, si se quiere ser aún más suave con producción. |
+| `--export csv\|json` | Exporta los hallazgos a archivo. |
+| `--dry-run` | Reporta sin escribir nada. |
+| `--cache` | Refresca `~/blast-dashboard/audit_cache.json`. |
+
+Para el Excel:
+
+```bash
+python3 tools/ticket_audit/export_excel.py --days 90
+```
+
+Tests:
+
+```bash
+python3 -m unittest tools.ticket_audit.test_detector -v
+```
+
+## Cómo leer cada estado
+
+| Estado | Significa | Qué hacer |
+|---|---|---|
+| `OVER_ISSUED` | Hay más tickets vigentes que los comprados. | El caso reportado. Revisar en el dashboard. |
+| `OVER_ISSUED_CORREGIDO` | Se emitieron de más y alguien ya anuló el excedente. Hoy cuadra. | Sin riesgo en puerta, pero **prueba que el bug disparó**. No ignorar. |
+| `UNDER_ISSUED` | El cliente pagó y nunca se emitieron todos sus tickets. | Igual de grave, pero para el cliente. Contactarlo. |
+| `PARTIALLY_CANCELLED` | Se emitieron todos y luego se anularon algunos. | Reembolso parcial legítimo. Se excluye. |
+| `ORPHAN_TICKETS` | Tickets cuya referencia no existe en ningún carrito. | Revisión manual: puede ser data vieja o migrada. |
+| `AMBIGUOUS` | Varios carritos con la misma referencia, un act sin `ticketGroupAmount`, o excedente anulado horas después. | No se puede afirmar duplicidad. Revisión manual. |
+| `BACKOFFICE_ISSUED` | Emitido desde el panel (cortesías, boletería física). | Se excluye. No es compra web. |
+| `ALL_CANCELLED` | Todos los tickets fueron anulados. | Reembolso legítimo. Se excluye. |
+| `OK` | Cuadra. | Nada. |
+
+`OVER_ISSUED_CORREGIDO` existe porque la auditoría mide el **estado actual**, no si el bug
+ocurrió. Sin ese estado, cada vez que alguien limpia duplicados a mano el caso desaparece del
+radar y se pierde la señal de que el problema sigue vivo.
+
+Solo se marca así cuando **todos los tickets nacieron en el mismo instante** (≤120 s, o sea
+una doble ejecución). Si el excedente se emitió horas después, por conteos es indistinguible
+de una anulación con reemisión legítima, y sale como `AMBIGUOUS`.
+
+> **Ojo:** el estado solo sobrevive si los duplicados se **anulan**. Si se **borran** de la
+> colección, la evidencia desaparece por completo y la referencia vuelve a `OK` — no hay
+> forma de detectarlo después. Pasó el 7 de agosto de 2026 con 30 referencias de ES029.
+
+**Preferimos un falso negativo declarado a un falso positivo silencioso.** Si el esquema no
+alcanza para afirmar que algo es duplicado, sale como `AMBIGUOUS`, no como incidencia.
+
+## Las reglas de negocio que hacen bien la cuenta
+
+Estas tres cosas no están documentadas en el backend y son las que separan un hallazgo real
+de un falso positivo:
+
+1. **`acts.ticketGroupAmount` es un multiplicador.** Una localidad grupal (palco, "COMBO VIP
+   X15 PERSONAS") se configura como **un** act que emite N tickets. Un carrito con 1 ítem de
+   un combo x15 debe tener 15 tickets. Ignorar esto inflaba los hallazgos un 32%.
+
+   ```
+   esperados = Σ (item.quantity × act.ticketGroupAmount)
+   ```
+
+2. **Los tickets de backoffice no tienen carrito, por diseño.** Se reconocen por
+   `cartId` que empieza con `BO-GENERATED`. Son cortesías y boletería física: el 22,5% de
+   las referencias. Contarlos como huérfanos sería puro ruido.
+
+3. **La anulación sobrescribe el ticket en sitio.** No hay borrado ni flag: el proceso pone
+   `status`, `label` y `typeEntrance` en `"CANCELLED"` y `price` en 0. Un carrito aprobado
+   cuyos tickets están todos anulados es un reembolso, no una sub-emisión.
+
+Además, `tickets.status` trae basura histórica (`"CANCELLED\n"` con salto de línea,
+`"VALIDATES"`, y un registro con un email en el campo). Siempre se normaliza con
+`strip()` + `upper()`.
+
+## Cómo se relacionan las colecciones
+
+```
+carts.reference  ==  tickets.paymentReference  ==  paymentIntents.reference
+str(carts._id)   ==  tickets.cartId            ==  paymentIntents.cartId
+```
+
+En 90 días: cero tickets sin `paymentReference`, cero sin `cartId`, cero referencias
+repetidas entre carritos. La referencia es una llave limpia.
+
+Ojo con las fechas: `dateCreation` y `date` están en hora local de Colombia (naive); el
+timestamp embebido en el `ObjectId` sí es UTC real, y es el que usa la herramienta.
+
+## Índices — pendiente
+
+Hoy **no existe ningún índice sobre los campos de referencia**:
+
+```
+tickets:        _id_, eventId_1, eventId_1_status_1
+carts:          _id_
+paymentIntents: _id_
+```
+
+Toda consulta por referencia es un COLLSCAN sobre 195k–222k documentos. Recomendado:
+
+```javascript
+db.tickets.createIndex({ paymentReference: 1 })
+db.carts.createIndex({ reference: 1 })
+db.paymentIntents.createIndex({ reference: 1 })
+```
+
+Y el que además **previene físicamente** la doble emisión (ver el informe de causa raíz):
+
+```javascript
+db.tickets.createIndex({ reference: 1 }, { unique: true })
+```
+
+Antes de crearlo hay que limpiar los duplicados existentes, porque si no, falla. Es una
+decisión de negocio, no técnica: implica decidir qué boleta sobrevive.
+
+## Marcar falsos positivos
+
+En `/auditoria`, clic en una fila → "Falso positivo" o "Marcar resuelto", con nota opcional.
+Eso **solo escribe el registro de auditoría**: no toca tickets, carritos ni pagos. Las
+resoluciones se guardan en Vercel KV si está configurado (`KV_REST_API_URL` /
+`KV_REST_API_TOKEN`) para que todo el equipo vea el mismo estado; en local caen en
+`audit_resolutions.json`.
+
+Para devolver una incidencia a la lista de abiertas: abrirla y darle "Reabrir".
+
+## Configuración
+
+`MONGODB_URI` en `.env` (usuario de solo lectura). Nada de credenciales en el código.
+
+## Limitaciones conocidas
+
+- **No hay detección en tiempo real.** El repositorio Java del backend no está en esta
+  máquina, así que no se pudo enganchar la emisión de tickets. El barrido es la red de
+  seguridad: correrlo periódicamente cubre el mismo hueco con unos minutos de retraso.
+- **El barrido es manual.** Si se quiere periódico, un cron que llame a
+  `backfill.py --days 2 --cache` cada 15 minutos es barato y suficiente.
+- El caché se regenera completo en cada corrida; no hay historial de versiones del barrido.

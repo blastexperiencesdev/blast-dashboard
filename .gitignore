@@ -25,3 +25,16 @@ Thumbs.db
 # Vercel
 .vercel/
 .vercel
+.env*
+
+# Datos de la auditoría: el repo es público, así que la data de negocio
+# (referencias de pago, montos por merchant) vive en Vercel KV, nunca en git.
+audit_cache.json
+audit_resolutions.json
+tools/ticket_audit/.alerta_estado.json
+
+# Configuración local del editor
+.claude/
+
+# Informe de incidente: se queda fuera del repo, que es público
+tools/ticket_audit/INFORME_CAUSA_RAIZ.md

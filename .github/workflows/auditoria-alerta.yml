@@ -1,0 +1,63 @@
+name: Auditoría de tickets — alerta
+
+# Red de seguridad: barre cada 15 minutos y avisa por WhatsApp los casos
+# nuevos. No hay hook en el momento de emitir porque el backend vive en otro
+# repositorio, así que este cron es lo que cubre ese hueco.
+#
+# Secretos que necesita (Settings > Secrets and variables > Actions):
+#   MONGODB_URI, KV_REST_API_URL, KV_REST_API_TOKEN,
+#   WATI_API_ENDPOINT, WATI_TOKEN, AUDIT_ALERT_NUMBERS
+# Variables opcionales:
+#   AUDIT_ALERT_TEMPLATE, AUDIT_ALERT_MAX_HORA, AUDIT_ALERT_ENABLED,
+#   AUDIT_DASHBOARD_URL
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+    inputs:
+      horas:
+        description: "Ventana a revisar, en horas"
+        required: false
+        default: "6"
+      dry_run:
+        description: "true = no envía ni guarda estado"
+        required: false
+        default: "false"
+
+concurrency:
+  group: auditoria-alerta
+  cancel-in-progress: false
+
+jobs:
+  revisar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Instalar dependencias
+        run: pip install --quiet pymongo
+
+      - name: Revisar y alertar
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          KV_REST_API_URL: ${{ secrets.KV_REST_API_URL }}
+          KV_REST_API_TOKEN: ${{ secrets.KV_REST_API_TOKEN }}
+          WATI_API_ENDPOINT: ${{ secrets.WATI_API_ENDPOINT }}
+          WATI_TOKEN: ${{ secrets.WATI_TOKEN }}
+          AUDIT_ALERT_NUMBERS: ${{ secrets.AUDIT_ALERT_NUMBERS }}
+          AUDIT_ALERT_TEMPLATE: ${{ vars.AUDIT_ALERT_TEMPLATE }}
+          AUDIT_ALERT_MAX_HORA: ${{ vars.AUDIT_ALERT_MAX_HORA }}
+          AUDIT_ALERT_ENABLED: ${{ vars.AUDIT_ALERT_ENABLED }}
+          AUDIT_DASHBOARD_URL: ${{ vars.AUDIT_DASHBOARD_URL }}
+          HORAS: ${{ inputs.horas || '6' }}
+          DRY: ${{ inputs.dry_run }}
+        run: |
+          extra=""
+          if [ "$DRY" = "true" ]; then extra="--dry-run"; fi
+          python3 tools/ticket_audit/alerta.py --horas "$HORAS" $extra

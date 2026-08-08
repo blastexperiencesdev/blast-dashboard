@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Blast Tickets — Auditoría de Tickets</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  :root {
+    --bg: #f6f7f9; --card: #ffffff; --border: #e3e6ea;
+    --text: #16181d; --muted: #6b7280; --accent: #2a78d6;
+    --ok: #1baf7a; --bad: #e34948; --warn: #eda100;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body { font-family: -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); }
+  header {
+    display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+    padding: 16px 24px; background: var(--card); border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; z-index: 10;
+  }
+  header h1 { font-size: 18px; font-weight: 600; margin-right: auto; }
+  header a.back { font-size: 13px; color: var(--accent); text-decoration: none; }
+  select, input, button {
+    font-size: 14px; padding: 8px 12px; border: 1px solid var(--border);
+    border-radius: 8px; background: var(--card); color: var(--text); font-family: inherit;
+  }
+  button { cursor: pointer; }
+  #updated { font-size: 12px; color: var(--muted); }
+  main { max-width: 1240px; margin: 0 auto; padding: 24px; }
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; }
+  .kpis > * { min-width: 0; }
+  .kpi { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+  .kpi .lbl { font-size: 12.5px; color: var(--muted); }
+  .kpi .val { font-size: 26px; font-weight: 600; margin-top: 4px; overflow-wrap: anywhere; }
+  .kpi .sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .kpi.alarm .val { color: var(--bad); }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 18px; margin-top: 14px; }
+  .card h2 { font-size: 14.5px; font-weight: 600; margin-bottom: 14px; }
+  .filters { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .filters label { font-size: 12px; color: var(--muted); display: flex; flex-direction: column; gap: 4px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; display: block; overflow-x: auto; max-width: 100%; }
+  td, th { padding: 8px 6px; border-bottom: 1px solid var(--border); text-align: left; white-space: nowrap; }
+  th { color: var(--muted); font-weight: 500; font-size: 12.5px; }
+  tbody tr { cursor: pointer; }
+  tbody tr:hover { background: #f2f6fb; }
+  .empty { color: var(--muted); font-size: 13px; padding: 20px 0; text-align: center; }
+  .badge { font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 600; white-space: nowrap; }
+  .b-critical { background: #fdeaea; color: #a32d2d; }
+  .b-high { background: #fdf3dd; color: #8a5b06; }
+  .b-medium { background: #eaf1fb; color: #1f5192; }
+  .b-low { background: #eef0f3; color: #52606d; }
+  .b-ok { background: #e3f6ee; color: #0d7a54; }
+  .chart-wrap { position: relative; height: 220px; }
+  .note { font-size: 12px; color: var(--muted); margin-top: 10px; line-height: 1.5; }
+  .banner { border-left: 4px solid var(--bad); background: #fdeaea; color: #7a1f1f;
+            padding: 12px 16px; border-radius: 8px; font-size: 13.5px; line-height: 1.55; }
+  dialog { border: none; border-radius: 14px; padding: 0; max-width: 860px; width: 94%;
+           box-shadow: 0 18px 50px rgba(0,0,0,.22); }
+  dialog::backdrop { background: rgba(0,0,0,.4); }
+  .modal-head { padding: 18px 22px; border-bottom: 1px solid var(--border);
+                display: flex; align-items: center; gap: 12px; }
+  .modal-head h3 { font-size: 16px; font-weight: 600; margin-right: auto; }
+  .modal-body { padding: 20px 22px; max-height: 66vh; overflow-y: auto; }
+  .vs { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 700px) { .vs { grid-template-columns: 1fr; } }
+  .vs > div { background: var(--bg); border-radius: 10px; padding: 14px; }
+  .vs h4 { font-size: 12.5px; color: var(--muted); font-weight: 600; margin-bottom: 10px;
+           text-transform: uppercase; letter-spacing: .04em; }
+  .vs .big { font-size: 30px; font-weight: 700; }
+  .kv { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; padding: 4px 0; }
+  .kv span:first-child { color: var(--muted); }
+  .ids { font-family: ui-monospace, Menlo, monospace; font-size: 11.5px; color: var(--muted);
+         max-height: 130px; overflow-y: auto; background: var(--card); border: 1px solid var(--border);
+         border-radius: 8px; padding: 8px; margin-top: 8px; line-height: 1.7; }
+  .modal-foot { padding: 16px 22px; border-top: 1px solid var(--border);
+                display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn-warn { background: #fff8e6; border-color: #e8cf95; color: #8a5b06; }
+  .readonly { font-size: 12px; color: var(--muted); margin-right: auto; }
+  @media (max-width: 480px) { main { padding: 14px; } .card { padding: 14px; } header { padding: 12px 14px; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>🎫 Auditoría de Tickets</h1>
+  <a class="back" href="/">← Volver al dashboard</a>
+  <span id="updated">cargando…</span>
+</header>
+<main>
+
+  <div id="banner"></div>
+
+  <div class="kpis" id="kpis" style="margin-top:14px"></div>
+
+  <div class="card">
+    <h2>Incidencias por día <small style="color:var(--muted);font-weight:400">(tickets en exceso — un pico sugiere un deploy o un proceso puntual)</small></h2>
+    <div class="chart-wrap"><canvas id="chart"></canvas></div>
+  </div>
+
+  <div class="card">
+    <h2>🔬 Diagnóstico — los duplicados no vienen de una sola causa</h2>
+    <div id="diagnostico"></div>
+    <div class="note">
+      Se separan por la <strong>ventana temporal</strong> entre el primer y el último ticket de cada
+      referencia, que es lo que distingue una doble ejecución del flujo de pago de un reproceso
+      posterior. La <strong>firma de clonación</strong> (varios tickets con el mismo
+      <code>tickets.reference</code>) confirma cuál de los dos ocurrió: una emisión real genera
+      una reference distinta por ticket.
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="filters">
+      <label>Merchant<select id="f-merchant"><option value="ALL">Todos</option></select></label>
+      <label>Estado
+        <select id="f-estado">
+          <option value="TODOS">Todos</option>
+          <option value="OVER_ISSUED">Sobre-emisión</option>
+          <option value="OVER_ISSUED_CORREGIDO">Sobre-emisión ya corregida</option>
+          <option value="UNDER_ISSUED">Sub-emisión</option>
+          <option value="ORPHAN_TICKETS">Huérfanos</option>
+          <option value="AMBIGUOUS">Ambiguos</option>
+        </select>
+      </label>
+      <label>Severidad
+        <select id="f-sev">
+          <option value="TODAS">Todas</option>
+          <option value="critical">Crítica</option>
+          <option value="high">Alta</option>
+          <option value="medium">Media</option>
+          <option value="low">Baja</option>
+        </select>
+      </label>
+      <label>Desde<input type="date" id="f-desde"></label>
+      <label>Hasta<input type="date" id="f-hasta"></label>
+      <label>Ver
+        <select id="f-ver">
+          <option value="abiertas">Abiertas</option>
+          <option value="resueltas">Resueltas</option>
+          <option value="todas">Todas</option>
+        </select>
+      </label>
+      <label>Buscar<input id="f-q" placeholder="payment reference, evento…" style="min-width:220px"></label>
+      <button id="btn-csv" style="margin-left:auto">Descargar CSV</button>
+    </div>
+    <div style="max-height:560px;overflow-y:auto;margin-top:14px">
+      <table id="tabla"></table>
+    </div>
+    <div class="note" id="leyenda"></div>
+  </div>
+
+</main>
+
+<dialog id="modal">
+  <div class="modal-head">
+    <h3 id="m-title">—</h3>
+    <span id="m-sev"></span>
+    <button onclick="document.getElementById('modal').close()">Cerrar</button>
+  </div>
+  <div class="modal-body" id="m-body"></div>
+  <div class="modal-foot">
+    <span class="readonly">Marcar aquí solo cambia el registro de auditoría. Nunca modifica tickets ni pagos.</span>
+    <input id="m-nota" placeholder="Nota (opcional)" style="flex:1;min-width:180px">
+    <button class="btn-warn" id="m-falso">Falso positivo</button>
+    <button class="btn-primary" id="m-resuelto">Marcar resuelto</button>
+    <button id="m-reabrir" style="display:none">Reabrir</button>
+  </div>
+</dialog>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const money = (n) => "$" + Math.round(n || 0).toLocaleString("es-CO");
+const num = (n) => (n || 0).toLocaleString("es-CO");
+const ESTADOS = {
+  OVER_ISSUED: "Sobre-emisión", OVER_ISSUED_CORREGIDO: "Sobre-emisión ya corregida",
+  UNDER_ISSUED: "Sub-emisión", ORPHAN_TICKETS: "Huérfano", AMBIGUOUS: "Ambiguo",
+  NO_CART: "Sin carrito", PARTIALLY_CANCELLED: "Anulación parcial",
+};
+const SEV = { critical: "Crítica", high: "Alta", medium: "Media", low: "Baja" };
+let DATA = { incidencias: [] }, chart = null, actual = null;
+
+function params() {
+  const p = new URLSearchParams({
+    merchant: $("f-merchant").value, estado: $("f-estado").value,
+    severidad: $("f-sev").value, desde: $("f-desde").value,
+    hasta: $("f-hasta").value, q: $("f-q").value, ver: $("f-ver").value,
+  });
+  return p.toString();
+}
+
+async function cargar() {
+  $("updated").textContent = "cargando…";
+  let r;
+  try {
+    r = await fetch("/api/auditoria?" + params());
+  } catch (e) {
+    $("updated").textContent = "sin conexión";
+    return;
+  }
+  if (!r.ok) {
+    const err = await r.json().catch(() => ({}));
+    $("banner").innerHTML = `<div class="banner">${err.detail || "No se pudo cargar la auditoría."}</div>`;
+    $("updated").textContent = "";
+    return;
+  }
+  DATA = await r.json();
+  pintar();
+}
+
+function pintar() {
+  const k = DATA.kpis || {}, g = DATA.totalesGlobales || {};
+  const upd = DATA.updated ? new Date(DATA.updated) : null;
+  const w = DATA.window || {};
+  const rango = w.from && w.until
+    ? `${w.from.slice(0, 10)} → ${w.until.slice(0, 10)} · ` : "";
+  $("updated").textContent = upd
+    ? rango + "barrido: " + upd.toLocaleString("es-CO", { dateStyle: "short", timeStyle: "short" })
+    : "";
+
+  // banner de incidente activo: hoy o ayer
+  const hoy = new Date(), limite = new Date(hoy.getTime() - 36 * 3600 * 1000);
+  const recientes = (DATA.incidencias || []).filter(
+    (i) => i.status === "OVER_ISSUED" && i.createdAtLast && new Date(i.createdAtLast) > limite);
+  $("banner").innerHTML = recientes.length
+    ? `<div class="banner"><strong>Incidente activo.</strong> ${recientes.length}
+       ${recientes.length === 1 ? "caso" : "casos"} de sobre-emisión en las últimas 36 horas
+       (${num(recientes.reduce((a, i) => a + i.delta, 0))} tickets de más). El proceso que los
+       genera sigue corriendo.</div>`
+    : "";
+
+  $("kpis").innerHTML = `
+    <div class="kpi"><div class="lbl">Incidencias</div><div class="val">${num(k.incidencias)}</div>
+      <div class="sub">${num(k.criticas)} críticas · ${num(k.resueltas)} marcadas</div></div>
+    <div class="kpi alarm"><div class="lbl">Tickets duplicados vivos</div><div class="val">${num(k.ticketsEnExceso)}</div>
+      <div class="sub">boletas de más aún vigentes${g.ticketsCorregidos
+        ? ` · ${num(g.ticketsCorregidos)} más ya anuladas a mano` : ""}</div></div>
+    <div class="kpi"><div class="lbl">Valor facial expuesto</div><div class="val">${money(k.valorFacialExpuesto)}</div>
+      <div class="sub">boletería que podría escanearse en puerta</div></div>
+    <div class="kpi"><div class="lbl">Merchants afectados</div><div class="val">${num(k.merchantsAfectados)}</div>
+      <div class="sub">${num(g.merchantsAfectados)} con sobre-emisión en todo el periodo</div></div>`;
+
+  // selector de merchants a partir de la data
+  const sel = $("f-merchant");
+  if (sel.options.length <= 1) {
+    const vistos = new Map();
+    (DATA.incidencias || []).forEach((i) => {
+      if (i.merchantRef) vistos.set(i.merchantRef, i.merchantName || i.merchantRef);
+    });
+    [...vistos.entries()].sort((a, b) => a[1].localeCompare(b[1])).forEach(([ref, nom]) => {
+      const o = document.createElement("option");
+      o.value = ref; o.textContent = `${nom} (${ref})`;
+      sel.appendChild(o);
+    });
+  }
+
+  grafica();
+  diagnostico();
+  tabla();
+}
+
+// Separa los hallazgos en las dos poblaciones que muestran los datos. La regla
+// es la ventana temporal: si todos los tickets nacen en el mismo instante, el
+// flujo de compra se ejecutó dos veces; si nacen minutos u horas después (o
+// meses), algo los reprocesó.
+function diagnostico() {
+  const over = (DATA.incidencias || []).filter((i) => i.status === "OVER_ISSUED");
+  if (!over.length) { $("diagnostico").innerHTML = ""; return; }
+
+  const dia = 86400e3;
+  const conClon = (g) => (g.duplicateGroups || []).some((d) => d.type === "cloned_ticket_reference");
+  const viejo = (i) => i.cartDate && i.createdAtFirst &&
+    (new Date(i.createdAtFirst) - new Date(String(i.cartDate).replace(" ", "T"))) > 30 * dia;
+
+  const grupos = [
+    {
+      nombre: "Reproceso de tickets antiguos",
+      filtro: (i) => (i.createdAtSpread || 0) > 0,
+      causa: `Un proceso recorre carritos <strong>ya pagados hace meses</strong> y vuelve a insertar
+              sus tickets, a un ritmo constante de un par de segundos por inserción. No es el flujo
+              de compra: el pago ocurrió una sola vez y hace mucho tiempo.`,
+      color: "var(--bad)",
+    },
+    {
+      nombre: "Doble ejecución en el pago",
+      filtro: (i) => (i.createdAtSpread || 0) === 0,
+      causa: `Todos los tickets nacen en el mismo segundo, el mismo día de la compra. Es el patrón
+              clásico de doble webhook de la pasarela o doble envío del checkout. Sin clave de
+              idempotencia, nada impide que el segundo llamado emita otra vez.`,
+      color: "var(--warn)",
+    },
+  ];
+
+  $("diagnostico").innerHTML = grupos.map((g) => {
+    const casos = over.filter(g.filtro);
+    if (!casos.length) return "";
+    const tickets = casos.reduce((a, i) => a + i.delta, 0);
+    const merchants = [...new Set(casos.map((i) => i.merchantRef))];
+    const clones = casos.filter(conClon).length;
+    const dobles = casos.filter((i) => i.approvedPaymentIntents > 1).length;
+    const antiguos = casos.filter(viejo).length;
+    const pct = Math.round(tickets / over.reduce((a, i) => a + i.delta, 0) * 100);
+    return `
+      <div style="border-left:4px solid ${g.color};padding:2px 0 2px 14px;margin-bottom:18px">
+        <div style="font-size:14.5px;font-weight:600">${g.nombre}</div>
+        <div style="font-size:13px;color:var(--muted);margin:4px 0 8px">
+          ${casos.length} casos · <strong style="color:var(--text)">${num(tickets)} tickets de más</strong>
+          (${pct}% del total) · merchants: ${merchants.join(", ")}
+        </div>
+        <p style="font-size:13.5px;line-height:1.6">${g.causa}</p>
+        <div style="font-size:12.5px;color:var(--muted);margin-top:8px">
+          Evidencia: ${clones} de ${casos.length} con firma de clonación ·
+          ${dobles} con más de un pago aprobado ·
+          ${antiguos} con la compra hecha más de 30 días antes de la emisión.
+        </div>
+      </div>`;
+  }).join("");
+}
+
+function grafica() {
+  const dias = DATA.porDia || [];
+  if (chart) chart.destroy();
+  chart = new Chart($("chart"), {
+    type: "bar",
+    data: {
+      labels: dias.map((d) => d.dia),
+      datasets: [{ label: "Tickets en exceso", data: dias.map((d) => d.tickets),
+                   backgroundColor: "#e34948", borderRadius: 4 }],
+    },
+    options: {
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true, ticks: { precision: 0 } },
+                x: { ticks: { maxRotation: 60, minRotation: 0, autoSkip: true } } },
+    },
+  });
+}
+
+function tabla() {
+  const filas = DATA.incidencias || [];
+  if (!filas.length) {
+    $("tabla").innerHTML = `<tbody><tr><td class="empty">Sin incidencias con estos filtros.</td></tr></tbody>`;
+    $("leyenda").textContent = "";
+    return;
+  }
+  const head = `<thead><tr>
+    <th>Payment reference</th><th>Estado</th><th>Sev.</th><th>Merchant</th><th>Evento</th>
+    <th>Esperados</th><th>Emitidos</th><th>Delta</th><th>Expuesto</th><th>Última emisión (UTC)</th><th></th>
+  </tr></thead>`;
+  const body = filas.map((i, idx) => `<tr data-i="${idx}">
+      <td><code>${i.paymentReference || ""}</code></td>
+      <td>${ESTADOS[i.status] || i.status}</td>
+      <td><span class="badge b-${i.severity}">${SEV[i.severity] || i.severity}</span></td>
+      <td>${i.merchantRef || "—"}</td>
+      <td title="${(i.eventName || "").replace(/"/g, "")}">${(i.eventName || "—").slice(0, 44)}</td>
+      <td>${num(i.expectedTickets)}</td>
+      <td>${num(i.actualTickets)}</td>
+      <td>${i.status === "OVER_ISSUED_CORREGIDO"
+            ? `<span style="color:var(--muted)">+${i.correctedExcess} anulados</span>`
+            : `<strong style="color:${i.delta > 0 ? "var(--bad)" : "var(--warn)"}">${i.delta > 0 ? "+" : ""}${i.delta}</strong>`}</td>
+      <td>${money(i.exposedAmount)}</td>
+      <td>${(i.createdAtLast || "").replace("T", " ").slice(0, 16)}</td>
+      <td>${i.resolucion ? `<span class="badge b-ok">${i.resolucion.resolucion === "falso_positivo" ? "Falso pos." : "Resuelto"}</span>` : ""}</td>
+    </tr>`).join("");
+  $("tabla").innerHTML = head + "<tbody>" + body + "</tbody>";
+  $("leyenda").innerHTML = `Mostrando ${filas.length} incidencias. Clic en una fila para ver el detalle.
+    <strong>Esperados</strong> = suma de (cantidad del ítem × ticketGroupAmount del act), que es el
+    multiplicador de las localidades grupales como palcos y combos.
+    <strong>Emitidos</strong> = tickets vigentes (APPROVED o VALIDATED); los anulados no cuentan.`;
+  $("tabla").querySelectorAll("tbody tr").forEach((tr) => {
+    tr.addEventListener("click", () => detalle(filas[+tr.dataset.i]));
+  });
+}
+
+function detalle(i) {
+  actual = i;
+  $("m-title").textContent = i.paymentReference;
+  $("m-sev").innerHTML = `<span class="badge b-${i.severity}">${SEV[i.severity] || i.severity}</span>`;
+  const spread = i.createdAtSpread || 0;
+  const ventana = spread < 60 ? `${Math.round(spread)} s`
+    : spread < 3600 ? `${(spread / 60).toFixed(1)} min`
+    : `${(spread / 3600).toFixed(1)} h`;
+  const clones = (i.duplicateGroups || []).filter((g) => g.type === "cloned_ticket_reference");
+  const mismos = (i.duplicateGroups || []).filter((g) => g.type === "same_act_and_id");
+
+  $("m-body").innerHTML = `
+    <div class="vs">
+      <div>
+        <h4>Carrito (lo comprado)</h4>
+        <div class="big">${num(i.expectedTickets)}</div>
+        <div class="kv"><span>Estado</span><span>${i.cartStatus || "—"}</span></div>
+        <div class="kv"><span>Monto pagado</span><span>${money(i.amountPaid)}</span></div>
+        <div class="kv"><span>Método de pago</span><span>${i.paymentMethod || "—"}</span></div>
+        <div class="kv"><span>Intentos aprobados</span><span>${num(i.approvedPaymentIntents)} de ${num(i.paymentIntents)}</span></div>
+        <div class="kv"><span>Fecha de compra</span><span>${(i.cartDate || "—").toString().replace("T", " ").slice(0, 16)}</span></div>
+        <div class="ids">cartId: ${i.cartId || "—"}</div>
+      </div>
+      <div>
+        <h4>Tickets (lo emitido)</h4>
+        <div class="big" style="color:${i.delta > 0 ? "var(--bad)" : "var(--warn)"}">${num(i.actualTickets)}</div>
+        <div class="kv"><span>Diferencia</span><span><strong>${i.delta > 0 ? "+" : ""}${i.delta}</strong></span></div>
+        <div class="kv"><span>Anulados</span><span>${num(i.cancelledTickets)}</span></div>
+        <div class="kv"><span>Primera emisión</span><span>${(i.createdAtFirst || "—").replace("T", " ").slice(0, 16)}</span></div>
+        <div class="kv"><span>Última emisión</span><span>${(i.createdAtLast || "—").replace("T", " ").slice(0, 16)}</span></div>
+        <div class="kv"><span>Ventana entre la 1ª y la última</span><span>${ventana}</span></div>
+        <div class="ids">${(i.ticketIds || []).join("<br>") || "—"}</div>
+      </div>
+    </div>
+
+    <div style="margin-top:16px">
+      <h4 style="font-size:12.5px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px">Diagnóstico</h4>
+      <p style="font-size:13.5px;line-height:1.6">${i.reason || "—"}</p>
+      ${clones.length ? `<p style="font-size:13.5px;line-height:1.6;margin-top:8px">
+        <strong>Firma de clonación:</strong> ${clones.length} grupo(s) de tickets comparten el mismo
+        <code>tickets.reference</code> (hasta ${Math.max(...clones.map((c) => c.count))} copias).
+        Una emisión real genera una reference distinta por ticket, así que estos son copias del
+        documento original, no emisiones nuevas.</p>` : ""}
+      ${mismos.length ? `<p style="font-size:13.5px;line-height:1.6;margin-top:8px">
+        <strong>Mismo asistente repetido:</strong> ${mismos.length} combinación(es) de asistente y
+        localidad aparecen hasta ${Math.max(...mismos.map((c) => c.count))} veces.</p>` : ""}
+      ${i.approvedPaymentIntents > 1 ? `<p style="font-size:13.5px;line-height:1.6;margin-top:8px">
+        <strong>Ojo:</strong> hay ${i.approvedPaymentIntents} intentos de pago aprobados para esta
+        referencia. Aquí sí cabe un doble webhook de la pasarela.</p>` : ""}
+    </div>
+
+    <div style="margin-top:16px">
+      <h4 style="font-size:12.5px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px">Registros originales</h4>
+      <div class="kv"><span>Evento</span><span>${i.eventName || "—"}</span></div>
+      <div class="kv"><span>eventId</span><span><code>${i.eventId || "—"}</code></span></div>
+      <div class="kv"><span>Merchant</span><span>${i.merchantName || ""} (${i.merchantRef || "—"})</span></div>
+      ${i.eventId ? `<div style="margin-top:8px"><a href="/#evento-${i.eventId}" style="font-size:13px;color:var(--accent)">Ver ficha del evento en el dashboard →</a></div>` : ""}
+    </div>
+
+    ${i.resolucion ? `<div style="margin-top:16px;background:#e3f6ee;border-radius:8px;padding:12px;font-size:13px">
+      <strong>${i.resolucion.resolucion === "falso_positivo" ? "Marcada como falso positivo" : "Marcada como resuelta"}</strong>
+      por ${i.resolucion.usuario} el ${new Date(i.resolucion.ts).toLocaleString("es-CO")}.
+      ${i.resolucion.nota ? `<br>Nota: ${i.resolucion.nota}` : ""}</div>` : ""}`;
+
+  $("m-nota").value = "";
+  $("m-reabrir").style.display = i.resolucion ? "inline-block" : "none";
+  $("m-resuelto").style.display = i.resolucion ? "none" : "inline-block";
+  $("m-falso").style.display = i.resolucion ? "none" : "inline-block";
+  $("modal").showModal();
+}
+
+async function resolver(tipo) {
+  if (!actual) return;
+  await fetch("/api/auditoria/resolver", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      paymentReference: actual.paymentReference,
+      resolucion: tipo,
+      nota: $("m-nota").value,
+    }),
+  });
+  $("modal").close();
+  cargar();
+}
+
+["f-merchant", "f-estado", "f-sev", "f-desde", "f-hasta", "f-ver"].forEach((id) =>
+  $(id).addEventListener("change", cargar));
+let debounce;
+$("f-q").addEventListener("input", () => { clearTimeout(debounce); debounce = setTimeout(cargar, 300); });
+$("btn-csv").addEventListener("click", () => { location.href = "/api/auditoria/csv?" + params(); });
+$("m-resuelto").addEventListener("click", () => resolver("resuelto"));
+$("m-falso").addEventListener("click", () => resolver("falso_positivo"));
+$("m-reabrir").addEventListener("click", () => resolver("reabrir"));
+
+cargar();
+</script>
+</body>
+</html>

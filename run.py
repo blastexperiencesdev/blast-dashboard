@@ -1,3 +1,4 @@
+import os
 import sys
 import traceback
 from pathlib import Path
@@ -12,4 +13,4 @@ except Exception:
 
 import uvicorn
 
-uvicorn.run(app, host="127.0.0.1", port=8899)
+uvicorn.run(app, host="127.0.0.1", port=int(os.environ.get("PORT", 8899)))
