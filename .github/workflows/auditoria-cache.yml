@@ -1,0 +1,44 @@
+name: Auditoría de tickets — refrescar tablero
+
+# El barrido de 180 días tarda ~70 s, así que se corre cada hora en vez de
+# cada 15 minutos. Deja el resultado en Vercel KV: el tablero lo lee de ahí,
+# sin necesidad de desplegar nada para actualizar las cifras.
+
+on:
+  schedule:
+    - cron: "7 * * * *"
+  workflow_dispatch:
+    inputs:
+      dias:
+        description: "Días hacia atrás"
+        required: false
+        default: "180"
+
+concurrency:
+  group: auditoria-cache
+  cancel-in-progress: true
+
+jobs:
+  refrescar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Instalar dependencias
+        run: pip install --quiet pymongo
+
+      - name: Refrescar caché del tablero
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          KV_REST_API_URL: ${{ secrets.KV_REST_API_URL }}
+          KV_REST_API_TOKEN: ${{ secrets.KV_REST_API_TOKEN }}
+          AUDIT_ALERT_ENABLED: "0"
+          DIAS: ${{ inputs.dias || '180' }}
+        run: |
+          python3 tools/ticket_audit/alerta.py \
+            --horas 1 --refrescar-cache --dias-cache "$DIAS"

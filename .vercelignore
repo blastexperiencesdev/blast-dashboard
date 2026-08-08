@@ -1,0 +1,19 @@
+# Sin esto, el CLI sube el directorio completo, incluido el .env local.
+# Las credenciales ya viven como variables de entorno del proyecto en Vercel.
+.env
+.env.*
+!.env.example
+
+# Estado local de la alerta y resoluciones: en producción viven en Vercel KV.
+tools/ticket_audit/.alerta_estado.json
+audit_resolutions.json
+
+# audit_cache.json SÍ se sube: es la semilla para que el tablero tenga datos
+# desde el primer despliegue. Una vez que el workflow horario corre, el
+# tablero lee de KV y este archivo queda solo como respaldo.
+
+.git
+.github
+.claude
+__pycache__
+*.pyc
