@@ -45,10 +45,18 @@ from tools.ticket_audit.detector import (  # noqa: E402
 #: llenarían el WhatsApp de ruido.
 ALERTAN = (OVER_ISSUED, UNDER_ISSUED)
 
+def env(nombre: str, default: str = "") -> str:
+    """GitHub Actions inyecta las variables opcionales como cadena vacía cuando
+    no están definidas, así que os.environ.get devuelve "" en vez del default.
+    Aquí una cadena vacía cuenta como ausente."""
+    valor = (os.environ.get(nombre) or "").strip()
+    return valor or default
+
+
 KEY_AVISADAS = "ticket_audit_avisadas"
 KEY_ENVIOS = "ticket_audit_envios"
 KEY_CACHE = "ticket_audit_cache"
-DASHBOARD = os.environ.get("AUDIT_DASHBOARD_URL", "https://blast-dashboard-kappa.vercel.app/auditoria")
+DASHBOARD = env("AUDIT_DASHBOARD_URL", "https://blast-dashboard-kappa.vercel.app/auditoria")
 
 
 # --- almacenamiento compartido (Vercel KV / Upstash Redis por REST) ---------
@@ -58,8 +66,8 @@ class Estado:
     no, un archivo local, para poder probar sin credenciales."""
 
     def __init__(self):
-        self.base = (os.environ.get("KV_REST_API_URL") or "").rstrip("/")
-        self.token = os.environ.get("KV_REST_API_TOKEN") or ""
+        self.base = env("KV_REST_API_URL").rstrip("/")
+        self.token = env("KV_REST_API_TOKEN")
         self.archivo = Path(__file__).resolve().parent / ".alerta_estado.json"
 
     @property
@@ -99,9 +107,9 @@ class Estado:
 # --- WATI -------------------------------------------------------------------
 
 def enviar_whatsapp(numero: str, params: list) -> tuple[bool, str]:
-    endpoint = (os.environ.get("WATI_API_ENDPOINT") or "").rstrip("/")
-    token = os.environ.get("WATI_TOKEN") or os.environ.get("WATI_API_TOKEN") or ""
-    plantilla = os.environ.get("AUDIT_ALERT_TEMPLATE", "alerta_auditoria")
+    endpoint = env("WATI_API_ENDPOINT").rstrip("/")
+    token = env("WATI_TOKEN") or env("WATI_API_TOKEN")
+    plantilla = env("AUDIT_ALERT_TEMPLATE", "alerta_auditoria")
     if not endpoint or not token:
         return False, "faltan WATI_API_ENDPOINT o WATI_TOKEN"
     url = f"{endpoint}/api/v2/sendTemplateMessage?whatsappNumber={numero}"
@@ -135,7 +143,7 @@ def enviar_whatsapp(numero: str, params: list) -> tuple[bool, str]:
 
 
 def destinatarios() -> list:
-    crudo = os.environ.get("AUDIT_ALERT_NUMBERS", "")
+    crudo = env("AUDIT_ALERT_NUMBERS")
     return [n.strip() for n in crudo.replace(";", ",").split(",") if n.strip()]
 
 
@@ -195,7 +203,7 @@ def revisar(args) -> int:
         print("Sin casos nuevos.")
         return 0
 
-    if os.environ.get("AUDIT_ALERT_ENABLED", "1") == "0":
+    if env("AUDIT_ALERT_ENABLED", "1") == "0":
         print("Alertas desactivadas por AUDIT_ALERT_ENABLED=0. Solo se registra el estado.")
         marcar(estado, avisadas, nuevos, args)
         return 0
@@ -208,7 +216,10 @@ def revisar(args) -> int:
         return 0
 
     # Tope por hora: un bug masivo no puede convertirse en 400 WhatsApps.
-    tope = int(os.environ.get("AUDIT_ALERT_MAX_HORA", "6"))
+    try:
+        tope = int(env("AUDIT_ALERT_MAX_HORA", "6"))
+    except ValueError:
+        tope = 6
     envios = [t for t in (estado.get(KEY_ENVIOS, []) or [])
               if datetime.fromisoformat(t) > datetime.now(timezone.utc) - timedelta(hours=1)]
     disponibles = max(tope - len(envios), 0)
