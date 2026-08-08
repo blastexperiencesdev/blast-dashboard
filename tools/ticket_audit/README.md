@@ -15,10 +15,13 @@ resoluciones del dashboard. Corregir la data es siempre una decisión humana.
 | `detector.py` | Motor de detección. Única fuente de la lógica de clasificación. |
 | `backfill.py` | Barrido histórico por CLI + genera el caché del dashboard. |
 | `export_excel.py` | Reporte en Excel de los casos de sobre-emisión. |
-| `test_detector.py` | 24 tests de la clasificación, con fixtures de cada caso y de los falsos positivos. |
+| `alerta.py` | Chequeo periódico + alerta por WhatsApp. Lo corren los workflows. |
+| `export_merchant.py` | Conciliación por evento para un merchant. |
+| `export_ajuste_tickets.py` | Tabla boleta por boleta del servicio e IVA sin grabar. |
+| `test_detector.py` | 31 tests de la clasificación, con fixtures de cada caso y de los falsos positivos. |
 
-La vista vive en el dashboard (`~/blast-dashboard`), en `/auditoria`. El dashboard **no
-calcula nada**: solo lee el caché. Así el barrido, el Excel y la pantalla no pueden
+La vista vive en `/auditoria`. El dashboard **no calcula nada**: lee el caché desde Vercel
+KV, y si no hay, cae al archivo local. Así el barrido, el Excel y la pantalla no pueden
 divergir.
 
 ## Cómo correr el barrido
@@ -38,7 +41,7 @@ Toma unos 40 segundos para 90 días. Refresca lo que ve el dashboard. Opciones:
 | `--sleep 2` | Pausa entre lotes, si se quiere ser aún más suave con producción. |
 | `--export csv\|json` | Exporta los hallazgos a archivo. |
 | `--dry-run` | Reporta sin escribir nada. |
-| `--cache` | Refresca `~/blast-dashboard/audit_cache.json`. |
+| `--cache` | Refresca `audit_cache.json`, el respaldo local del tablero. |
 
 Para el Excel:
 
@@ -94,9 +97,14 @@ de un falso positivo:
    esperados = Σ (item.quantity × act.ticketGroupAmount)
    ```
 
-2. **Los tickets de backoffice no tienen carrito, por diseño.** Se reconocen por
-   `cartId` que empieza con `BO-GENERATED`. Son cortesías y boletería física: el 22,5% de
-   las referencias. Contarlos como huérfanos sería puro ruido.
+2. **Los tickets de backoffice no tienen carrito, por diseño.** Son cortesías, boletería
+   física y abonos: el 22,3% de las referencias. Contarlos sería puro ruido.
+
+   No se reconocen por un prefijo sino por la **forma del `cartId`**: una compra web
+   siempre deja ahí el ObjectId del carrito, y cualquier otra cosa la escribió el panel.
+   En producción conviven `BO-GENERATED-`, `BO-ABONO-GENERATED-`, `BO GENERATED `,
+   `b0 GENERATED` y hasta el nombre de la productora (`SDL EVENTOS`). Reconocer solo el
+   primer prefijo dejaba entrar 30 emisiones manuales al tablero.
 
 3. **La anulación sobrescribe el ticket en sitio.** No hay borrado ni flag: el proceso pone
    `status`, `label` y `typeEntrance` en `"CANCELLED"` y `price` en 0. Un carrito aprobado
