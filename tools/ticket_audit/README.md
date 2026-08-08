@@ -201,10 +201,13 @@ Variables opcionales (misma pantalla, pestaña *Variables*): `AUDIT_ALERT_TEMPLA
 ### La plantilla de WATI
 
 WhatsApp no deja mandar texto libre en frío, así que la alerta usa una plantilla
-aprobada por Meta con **6 parámetros**, en este orden:
+aprobada por Meta con **4 parámetros**, en este orden:
 
-1. merchant · 2. payment reference · 3. compradas vs emitidas · 4. monto
-5. tipo de caso y evento · 6. enlace al tablero
+1. merchant y evento · 2. payment reference · 3. compradas vs emitidas · 4. monto
+
+Son cuatro y no más porque Meta rechaza los cuerpos con demasiadas variables para
+poco texto fijo, y también los que **terminan en variable**. Por eso el enlace al
+tablero va como botón estático de la plantilla y no como parámetro.
 
 Si la plantilla no existe o no está aprobada, el envío falla pero **la incidencia
 igual queda en el tablero**: la notificación nunca es la única fuente de verdad.

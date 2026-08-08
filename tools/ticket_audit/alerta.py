@@ -157,17 +157,23 @@ def destinatarios() -> list:
 
 # --- mensajes ---------------------------------------------------------------
 
+# La plantilla tiene 4 variables y termina en texto fijo. Meta rechaza los
+# cuerpos que acaban en variable y los que tienen demasiadas variables para
+# poco texto. El enlace al tablero va como botón estático, no como parámetro.
+def plata(valor) -> str:
+    return f"${round(valor or 0):,}".replace(",", ".")
+
+
 def texto_caso(r) -> list:
     """Parámetros de la plantilla para un caso puntual."""
-    tipo = "sobre-emisión" if r.status == OVER_ISSUED else "sub-emisión"
+    tipo = "Sobre-emisión" if r.status == OVER_ISSUED else "Sub-emisión"
     delta = f"+{r.delta}" if r.delta > 0 else str(r.delta)
+    evento = (r.eventName or "").strip()
     return [
-        f"{r.merchantName or r.merchantRef}",
+        f"{r.merchantName or r.merchantRef}" + (f" · {evento[:40]}" if evento else ""),
         f"{r.paymentReference}",
-        f"{r.expectedTickets} compradas vs {r.actualTickets} emitidas ({delta})",
-        f"${round(r.exposedAmount or r.amountPaid):,}".replace(",", "."),
-        f"{tipo} · {(r.eventName or '')[:40]}",
-        DASHBOARD,
+        f"{tipo}: {r.expectedTickets} compradas vs {r.actualTickets} emitidas ({delta})",
+        plata(r.exposedAmount or r.amountPaid),
     ]
 
 
@@ -176,11 +182,9 @@ def texto_resumen(casos: list) -> list:
     tickets = sum(abs(c.delta) for c in casos)
     return [
         ", ".join(merchants)[:60],
-        f"{len(casos)} casos nuevos",
-        f"{tickets} boletas afectadas",
-        f"${round(sum(c.exposedAmount for c in casos)):,}".replace(",", "."),
-        "varios casos en la última hora",
-        DASHBOARD,
+        f"{len(casos)} referencias",
+        f"{len(casos)} casos nuevos, {tickets} boletas afectadas",
+        plata(sum(c.exposedAmount for c in casos)),
     ]
 
 
