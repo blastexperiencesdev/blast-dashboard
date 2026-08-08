@@ -55,7 +55,18 @@ jobs:
           AUDIT_ALERT_NUMBERS: ${{ secrets.AUDIT_ALERT_NUMBERS }}
         run: |
           python3 - <<'PY'
-          import os, sys
+          import hashlib, os, sys
+
+          # Huella irreversible: permite comparar contra el valor de origen sin
+          # exponerlo. Si la huella no coincide, lo guardado no es lo esperado.
+          def huella(v):
+              return hashlib.sha256(v.encode()).hexdigest()[:10] if v else "—"
+
+          ESPERADAS = {
+              "MONGODB_URI": ("cd35002699", 93),
+              "WATI_API_ENDPOINT": ("630de3f05d", 39),
+              "WATI_TOKEN": ("474be5281a", 170),
+          }
 
           def revisar(nombre, esperado=None, minimo=1):
               v = os.environ.get(nombre, "")
@@ -74,9 +85,16 @@ jobs:
                       problemas.append(f"debería empezar por {esperado}")
                   if len(limpio) < minimo:
                       problemas.append(f"muy corto ({len(limpio)} caracteres)")
+              esp = ESPERADAS.get(nombre)
+              if esp and limpio:
+                  if huella(limpio) != esp[0]:
+                      problemas.append(
+                          f"NO es el valor de tu .env (esperaba huella {esp[0]} "
+                          f"y {esp[1]} caracteres; llegó {huella(limpio)})")
               estado = "OK  " if not problemas else "MAL "
-              print(f"  {estado}{nombre:22s} {len(limpio):4d} caracteres"
-                    + (" -> " + "; ".join(problemas) if problemas else ""))
+              print(f"  {estado}{nombre:22s} {len(limpio):4d} caracteres  "
+                    f"huella={huella(limpio)}"
+                    + ("\n         -> " + "; ".join(problemas) if problemas else ""))
               return not problemas
 
           print("Revisión de secretos (solo forma, nunca el valor):")
