@@ -160,11 +160,65 @@ Para devolver una incidencia a la lista de abiertas: abrirla y darle "Reabrir".
 
 `MONGODB_URI` en `.env` (usuario de solo lectura). Nada de credenciales en el código.
 
+## Alertas automáticas
+
+Dos workflows de GitHub Actions cubren lo que no se puede enganchar en la emisión:
+
+| Workflow | Cada | Qué hace |
+|---|---|---|
+| `auditoria-alerta.yml` | 15 min | Barre las últimas 6 h y avisa por WhatsApp los casos nuevos |
+| `auditoria-cache.yml` | 1 hora | Recalcula los 180 días y deja el resultado en Vercel KV |
+
+Los cron solo corren desde la rama por defecto: hasta que el cambio no esté en
+`main`, no se dispara nada.
+
+### Secretos que hay que crear
+
+En *Settings > Secrets and variables > Actions*:
+
+| Secreto | De dónde sale |
+|---|---|
+| `MONGODB_URI` | el mismo de Vercel |
+| `KV_REST_API_URL` | Vercel > Storage > el KV del proyecto |
+| `KV_REST_API_TOKEN` | igual |
+| `WATI_API_ENDPOINT` | panel de WATI |
+| `WATI_TOKEN` | panel de WATI |
+| `AUDIT_ALERT_NUMBERS` | números de los admin, separados por coma (`573001112233,573009998877`) |
+
+Variables opcionales (misma pantalla, pestaña *Variables*): `AUDIT_ALERT_TEMPLATE`
+(default `alerta_auditoria`), `AUDIT_ALERT_MAX_HORA` (default 6),
+`AUDIT_ALERT_ENABLED` (poner en `0` apaga los envíos sin desplegar) y
+`AUDIT_DASHBOARD_URL`.
+
+### La plantilla de WATI
+
+WhatsApp no deja mandar texto libre en frío, así que la alerta usa una plantilla
+aprobada por Meta con **6 parámetros**, en este orden:
+
+1. merchant · 2. payment reference · 3. compradas vs emitidas · 4. monto
+5. tipo de caso y evento · 6. enlace al tablero
+
+Si la plantilla no existe o no está aprobada, el envío falla pero **la incidencia
+igual queda en el tablero**: la notificación nunca es la única fuente de verdad.
+
+### Cómo no ahogar a nadie en WhatsApp
+
+Hay tope de mensajes por hora (`AUDIT_ALERT_MAX_HORA`, 6 por defecto). Si en una
+corrida aparecen más casos que envíos disponibles, se manda **un solo mensaje
+resumen** en vez de uno por caso. El incidente del 6 de agosto habría generado 85
+mensajes; con esto genera uno.
+
+Cada referencia se avisa **una sola vez**: el estado de lo ya notificado vive en
+KV y se limpia a los 30 días.
+
 ## Limitaciones conocidas
 
-- **No hay detección en tiempo real.** El repositorio Java del backend no está en esta
-  máquina, así que no se pudo enganchar la emisión de tickets. El barrido es la red de
-  seguridad: correrlo periódicamente cubre el mismo hueco con unos minutos de retraso.
-- **El barrido es manual.** Si se quiere periódico, un cron que llame a
-  `backfill.py --days 2 --cache` cada 15 minutos es barato y suficiente.
+- **No hay hook en el momento de emitir.** El repositorio Java del backend es otro, así
+  que no se pudo enganchar la emisión. El cron de 15 minutos cubre ese hueco: en el peor
+  caso el aviso llega con ese retraso.
+- **El tablero es público.** Se sirve sin autenticación, por eso el resultado no lleva
+  datos del comprador y la API los vuelve a filtrar al leer. Si algún día se agregan
+  campos nuevos, revisar que no traigan nombre, cédula, correo ni teléfono.
+- **Este repositorio es público.** La data de negocio (referencias de pago, montos por
+  merchant) no puede vivir en git: va a Vercel KV y está en `.gitignore`.
 - El caché se regenera completo en cada corrida; no hay historial de versiones del barrido.
