@@ -43,6 +43,63 @@ jobs:
       - name: Instalar dependencias
         run: pip install --quiet pymongo
 
+      # Solo forma y longitud: nunca el valor. Sirve para saber cuál secreto
+      # quedó mal pegado sin tener que ir probando de a uno.
+      - name: Verificar secretos
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          KV_REST_API_URL: ${{ secrets.KV_REST_API_URL }}
+          KV_REST_API_TOKEN: ${{ secrets.KV_REST_API_TOKEN }}
+          WATI_API_ENDPOINT: ${{ secrets.WATI_API_ENDPOINT }}
+          WATI_TOKEN: ${{ secrets.WATI_TOKEN }}
+          AUDIT_ALERT_NUMBERS: ${{ secrets.AUDIT_ALERT_NUMBERS }}
+        run: |
+          python3 - <<'PY'
+          import os, sys
+
+          def revisar(nombre, esperado=None, minimo=1):
+              v = os.environ.get(nombre, "")
+              limpio = v.strip()
+              problemas = []
+              if not limpio:
+                  problemas.append("vacío o no existe")
+              else:
+                  if len(v) != len(limpio):
+                      problemas.append("tiene espacios o saltos de línea alrededor")
+                  if limpio[0] in "\"'" or limpio[-1] in "\"'":
+                      problemas.append("quedó con comillas")
+                  if limpio.upper().startswith(nombre + "="):
+                      problemas.append("incluye el nombre de la variable")
+                  if esperado and not limpio.startswith(esperado):
+                      problemas.append(f"debería empezar por {esperado}")
+                  if len(limpio) < minimo:
+                      problemas.append(f"muy corto ({len(limpio)} caracteres)")
+              estado = "OK  " if not problemas else "MAL "
+              print(f"  {estado}{nombre:22s} {len(limpio):4d} caracteres"
+                    + (" -> " + "; ".join(problemas) if problemas else ""))
+              return not problemas
+
+          print("Revisión de secretos (solo forma, nunca el valor):")
+          ok = [
+              revisar("MONGODB_URI", "mongodb", 20),
+              revisar("KV_REST_API_URL", "https://", 20),
+              revisar("KV_REST_API_TOKEN", None, 30),
+              revisar("WATI_API_ENDPOINT", "https://", 15),
+              revisar("WATI_TOKEN", None, 30),
+              revisar("AUDIT_ALERT_NUMBERS", None, 10),
+          ]
+          nums = [n for n in os.environ.get("AUDIT_ALERT_NUMBERS", "").replace(";", ",").split(",") if n.strip()]
+          print(f"       destinatarios detectados: {len(nums)}")
+          for n in nums:
+              n = n.strip()
+              aviso = "" if n.isdigit() else "  <- debe ser solo dígitos, sin + ni espacios"
+              print(f"         {n[:3]}...{n[-2:]} ({len(n)} dígitos){aviso}")
+          if not all(ok):
+              print("\nCorrige los que dicen MAL y vuelve a correr. Nada se envió.")
+              sys.exit(1)
+          print("\nTodos los secretos tienen buena forma.")
+          PY
+
       - name: Revisar y alertar
         env:
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
