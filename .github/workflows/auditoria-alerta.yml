@@ -24,6 +24,10 @@ on:
         description: "true = no envía ni guarda estado"
         required: false
         default: "false"
+      olvidar:
+        description: "true = borra el registro de avisados y sale"
+        required: false
+        default: "false"
 
 concurrency:
   group: auditoria-alerta
@@ -132,7 +136,12 @@ jobs:
           AUDIT_DASHBOARD_URL: ${{ vars.AUDIT_DASHBOARD_URL }}
           HORAS: ${{ inputs.horas || '6' }}
           DRY: ${{ inputs.dry_run }}
+          OLVIDAR: ${{ inputs.olvidar }}
         run: |
+          if [ "$OLVIDAR" = "true" ]; then
+            python3 tools/ticket_audit/alerta.py --olvidar
+            exit $?
+          fi
           extra=""
           if [ "$DRY" = "true" ]; then extra="--dry-run"; fi
           python3 tools/ticket_audit/alerta.py --horas "$HORAS" $extra

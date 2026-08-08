@@ -56,6 +56,10 @@ def env(nombre: str, default: str = "") -> str:
 KEY_AVISADAS = "ticket_audit_avisadas"
 KEY_ENVIOS = "ticket_audit_envios"
 KEY_CACHE = "ticket_audit_cache"
+
+#: WATI está detrás de Cloudflare y bloquea el User-Agent de urllib.
+USER_AGENT = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
+              "(KHTML, like Gecko) Chrome/126.0 Safari/537.36")
 DASHBOARD = env("AUDIT_DASHBOARD_URL", "https://blast-dashboard-kappa.vercel.app/auditoria")
 
 
@@ -120,7 +124,11 @@ def enviar_whatsapp(numero: str, params: list) -> tuple[bool, str]:
     }).encode()
     req = urllib.request.Request(url, data=cuerpo, method="POST", headers={
         "Authorization": token if token.startswith("Bearer") else f"Bearer {token}",
-        "Content-Type": "application/json"})
+        "Content-Type": "application/json",
+        # Sin User-Agent el WAF de WATI responde 403 (Cloudflare 1010): rechaza
+        # la firma por defecto de urllib.
+        "User-Agent": USER_AGENT,
+        "Accept": "application/json"})
     for intento in range(3):
         try:
             with urllib.request.urlopen(req, timeout=25) as r:
@@ -245,18 +253,29 @@ def revisar(args) -> int:
             print(f"   ... y {len(lotes) - 3} más")
         return 0
 
-    enviados = 0
+    enviados = fallidos = 0
     for params, etiqueta in lotes:
+        alguno = False
         for numero in numeros:
             ok, detalle = enviar_whatsapp(numero, params)
             print(f"  {etiqueta} -> {numero}: {detalle}")
-            if ok:
-                enviados += 1
-        envios.append(datetime.now(timezone.utc).isoformat())
+            enviados += 1 if ok else 0
+            fallidos += 0 if ok else 1
+            alguno = alguno or ok
+        if alguno:
+            envios.append(datetime.now(timezone.utc).isoformat())
 
     estado.set(KEY_ENVIOS, envios)
-    marcar(estado, avisadas, nuevos, args)
-    print(f"Listo: {len(nuevos)} casos nuevos, {enviados} mensajes enviados.")
+    # Solo se da por avisado lo que de verdad salió. Marcar un envío fallido
+    # dejaría esos casos mudos para siempre: no se reintentarían nunca.
+    if enviados:
+        marcar(estado, avisadas, nuevos, args)
+    print(f"Listo: {len(nuevos)} casos nuevos, {enviados} mensajes enviados, "
+          f"{fallidos} fallidos.")
+    if fallidos and not enviados:
+        print("Ningún mensaje salió. Los casos siguen pendientes de aviso y "
+              "visibles en el tablero.")
+        return 1
     return 0
 
 
@@ -323,7 +342,13 @@ def main():
                    help="además, recalcula el caché que consume el tablero")
     p.add_argument("--dias-cache", type=int, default=180)
     p.add_argument("--dry-run", action="store_true")
+    p.add_argument("--olvidar", action="store_true",
+                   help="borra el registro de referencias ya avisadas")
     args = p.parse_args()
+    if args.olvidar:
+        Estado().set(KEY_AVISADAS, {})
+        print("Registro de avisadas borrado: los casos vuelven a considerarse nuevos.")
+        sys.exit(0)
     sys.exit(revisar(args))
 
 
