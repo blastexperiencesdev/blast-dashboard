@@ -80,6 +80,17 @@ SAME_RUN_SECONDS = 120
 
 DEFAULT_DB = "blast-prod"
 
+#: Merchants que ya no son clientes. El resto del dashboard los deja fuera del
+#: selector y de los totales; la auditoria hace lo mismo para no llenar el
+#: tablero de casos de eventos que ya nadie opera. Se puede ampliar con la
+#: variable de entorno AUDIT_MERCHANTS_EXCLUIDOS.
+CHURNED = ["VPP028"]
+
+
+def merchants_excluidos() -> list:
+    extra = os.environ.get("AUDIT_MERCHANTS_EXCLUIDOS", "")
+    return CHURNED + [m.strip() for m in extra.split(",") if m.strip()]
+
 
 def norm_status(value) -> str:
     """Normaliza un status. La data trae saltos de linea y mayusculas mixtas."""
@@ -325,6 +336,10 @@ class TicketAuditor:
                 match["_id"] = id_range
         if merchant_ref:
             match["merchantReference"] = merchant_ref
+        else:
+            excluidos = merchants_excluidos()
+            if excluidos:
+                match["merchantReference"] = {"$nin": excluidos}
 
         merchants = self._load_merchants()
         groups = list(self._ticket_groups(match))
