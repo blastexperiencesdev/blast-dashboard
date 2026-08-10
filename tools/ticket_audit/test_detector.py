@@ -53,22 +53,27 @@ def cart(items, status="APPROVED", total=100000.0, cart_id=None):
 
 def group(n_alive, n_cancelled=0, cart_ids=("6a765019c6074a3be0e05596",),
           act_id=ACT_SIMPLE, ident="80850261", ticket_ref="GN123586614",
-          spread_seconds=0, distinct_refs=False):
+          spread_seconds=0, distinct_refs=False, n_reemitidos=0):
     """Simula la salida del $group de tickets."""
-    total = n_alive + n_cancelled
+    total = n_alive + n_cancelled + n_reemitidos
     keys = []
     for i in range(n_alive):
         keys.append({"act": act_id, "ident": ident,
                      "ref": f"REF{i}" if distinct_refs else ticket_ref,
-                     "st": "APPROVED"})
+                     "st": "APPROVED", "fresco": True})
     for i in range(n_cancelled):
-        keys.append({"act": act_id, "ident": ident, "ref": f"C{i}", "st": "CANCELLED"})
+        keys.append({"act": act_id, "ident": ident, "ref": f"C{i}",
+                     "st": "CANCELLED", "fresco": True})
+    for i in range(n_reemitidos):
+        keys.append({"act": act_id, "ident": ident, "ref": ticket_ref,
+                     "st": "APPROVED", "fresco": False})
     return {
         "_id": "AB123456789",
         "ticketIds": [oid_at(i) for i in range(total)],
         "total": total,
         "alive": n_alive,
         "cancelled": n_cancelled,
+        "reemitidos": n_reemitidos,
         "cartIds": list(cart_ids),
         "eventIds": ["686ae592dc26990eb58d4276"],
         "merchantRefs": ["BL001"],
@@ -212,6 +217,29 @@ class TestClasificacion(unittest.TestCase):
     def test_cartid_objectid_sin_carrito_sigue_siendo_huerfano(self):
         r = self.clasificar(group(2, cart_ids=("6a765019c6074a3be0e05596",)), None)
         self.assertEqual(r.status, ORPHAN_TICKETS)
+
+    # -- reemisiones tardias: no son emision web --
+
+    def test_copias_tardias_no_cuentan_como_sobre_emision(self):
+        """Caso de los palcos: 1 boleta comprada, 1 emitida el día de la compra
+        y 29 copias creadas 13 meses después por un reproceso. La compra web
+        entregó exactamente lo suyo."""
+        r = self.clasificar(group(1, n_reemitidos=29, distinct_refs=True),
+                            [cart([(ACT_SIMPLE, 1)])])
+        self.assertEqual(r.status, OK)
+        self.assertEqual(r.actualTickets, 1)
+        self.assertEqual(r.reissuedTickets, 29)
+
+    def test_sobre_emision_web_sigue_saltando_pese_a_copias(self):
+        """Si además de las copias hubo doble emisión el mismo día, se detecta."""
+        r = self.clasificar(group(3, n_reemitidos=10), [cart([(ACT_SIMPLE, 1)])])
+        self.assertEqual(r.status, OVER_ISSUED)
+        self.assertEqual(r.delta, 2)
+
+    def test_las_copias_no_ensucian_los_grupos_duplicados(self):
+        r = self.clasificar(group(1, n_reemitidos=29, distinct_refs=True),
+                            [cart([(ACT_SIMPLE, 1)])])
+        self.assertEqual(r.duplicateGroups, [])
 
     # -- sobre-emision que alguien ya limpio a mano --
 

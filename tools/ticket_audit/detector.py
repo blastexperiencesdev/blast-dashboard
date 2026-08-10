@@ -63,6 +63,15 @@ ALIVE_TICKET_STATUS = frozenset({"APPROVED", "VALIDATED"})
 #: Reconocer solo un prefijo dejaba entrar emisiones de backoffice al tablero.
 _OBJECTID_RE = re.compile(r"^[0-9a-fA-F]{24}$")
 
+#: Un ticket recien emitido nace en el mismo instante que su campo date: en
+#: produccion el 100% de las emisiones reales -web y backoffice- tiene menos de
+#: un minuto de desfase. Un documento creado mucho despues de la fecha que
+#: lleva escrita no es una emision: es una copia hecha por un reproceso
+#: posterior. Se mide contra el timestamp del ObjectId, que es UTC real,
+#: mientras que date viene en hora local de Colombia.
+REEMISION_DESFASE_SEGUNDOS = 3600
+HORAS_COLOMBIA = 5
+
 #: Ventana para considerar que unos tickets nacieron de la misma ejecucion.
 #: Se usa para distinguir una emision doble que alguien ya anulo a mano (todos
 #: los tickets nacen en el mismo instante) de una anulacion y reemision
@@ -110,6 +119,7 @@ class AuditResult:
     cancelledTickets: int = 0
     delta: int = 0
     correctedExcess: int = 0   # tickets emitidos de mas que ya fueron anulados
+    reissuedTickets: int = 0   # copias tardias o emitidas a mano desde el panel
     ticketIds: list = field(default_factory=list)
     duplicateGroups: list = field(default_factory=list)
     createdAtFirst: Optional[datetime] = None
@@ -240,13 +250,37 @@ class TicketAuditor:
         """$group de tickets por paymentReference, del lado del servidor."""
         pipeline = [
             {"$match": match},
+            # Marca cada ticket como emision real o como copia tardia.
+            # Un creatorEmail con un correo real significa que el ticket lo
+            # emitio una persona desde el panel. Casi siempre coincide con un
+            # cartId BO-*, pero se comprueba aparte por si el backoffice llega
+            # a escribir el cartId del carrito.
+            {"$set": {"_creado": {"$toDate": "$_id"},
+                      "_manual": {"$not": {"$in": [
+                          {"$toUpper": {"$trim": {"input": {"$ifNull": ["$creatorEmail", ""]}}}},
+                          ["", "WEB"]]}}}},
+            {"$set": {"_fresco": {"$cond": [
+                {"$eq": [{"$ifNull": ["$date", None]}, None]}, True,
+                {"$lte": [
+                    {"$abs": {"$subtract": [
+                        "$_creado",
+                        {"$add": ["$date", HORAS_COLOMBIA * 3600 * 1000]}]}},
+                    REEMISION_DESFASE_SEGUNDOS * 1000]}]}}},
             {"$group": {
                 "_id": "$paymentReference",
                 "ticketIds": {"$push": "$_id"},
                 "total": {"$sum": 1},
                 "alive": {"$sum": {"$cond": [
-                    {"$in": [{"$toUpper": {"$trim": {"input": {"$ifNull": ["$status", ""]}}}},
-                             list(ALIVE_TICKET_STATUS)]}, 1, 0]}},
+                    {"$and": [
+                        "$_fresco",
+                        {"$not": "$_manual"},
+                        {"$in": [{"$toUpper": {"$trim": {"input": {"$ifNull": ["$status", ""]}}}},
+                                 list(ALIVE_TICKET_STATUS)]}]}, 1, 0]}},
+                "reemitidos": {"$sum": {"$cond": [
+                    {"$and": [
+                        {"$or": [{"$not": "$_fresco"}, "$_manual"]},
+                        {"$in": [{"$toUpper": {"$trim": {"input": {"$ifNull": ["$status", ""]}}}},
+                                 list(ALIVE_TICKET_STATUS)]}]}, 1, 0]}},
                 "cancelled": {"$sum": {"$cond": [
                     {"$eq": [{"$toUpper": {"$trim": {"input": {"$ifNull": ["$status", ""]}}}},
                              "CANCELLED"]}, 1, 0]}},
@@ -255,7 +289,8 @@ class TicketAuditor:
                 "merchantRefs": {"$addToSet": "$merchantReference"},
                 "dupKeys": {"$push": {
                     "act": "$actId", "ident": "$identification",
-                    "ref": "$reference", "st": "$status"}},
+                    "ref": "$reference", "st": "$status",
+                    "fresco": {"$and": ["$_fresco", {"$not": "$_manual"}]}}},
                 "firstId": {"$min": "$_id"},
                 "lastId": {"$max": "$_id"},
             }},
@@ -339,6 +374,7 @@ class TicketAuditor:
             eventId=event_id,
             totalTickets=group.get("total", 0),
             actualTickets=group.get("alive", 0),
+            reissuedTickets=group.get("reemitidos", 0),
             cancelledTickets=group.get("cancelled", 0),
             ticketIds=ticket_ids,
             createdAtFirst=first,
@@ -438,7 +474,8 @@ def _duplicate_groups(dup_keys: list) -> list:
     """Agrupa tickets vigentes identicos (mismo act + cedula) y reporta los
     que aparecen mas de una vez. Tambien detecta ticket.reference repetido,
     que es la firma de una clonacion de documento (no de una emision nueva)."""
-    alive = [d for d in dup_keys if norm_status(d.get("st")) in ALIVE_TICKET_STATUS]
+    alive = [d for d in dup_keys
+             if norm_status(d.get("st")) in ALIVE_TICKET_STATUS and d.get("fresco", True)]
     by_identity = Counter((d.get("act"), d.get("ident")) for d in alive)
     by_reference = Counter(d.get("ref") for d in alive if d.get("ref"))
     groups = []
