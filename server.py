@@ -15,6 +15,7 @@ Notas del esquema aprendidas:
 """
 import json
 import os
+import re
 import time
 import urllib.error
 import urllib.parse
@@ -33,6 +34,10 @@ from pymongo import MongoClient
 BASE = Path(__file__).resolve().parent
 CLARITY_CACHE = BASE / "clarity_cache.json"
 CLARITY_TTL_SECONDS = 3 * 3600
+
+# Las páginas de evento son /eventos/<ObjectId>: ese id es el _id de `events`,
+# y es lo que permite separar las métricas de Clarity por evento.
+RE_EVENTO_URL = re.compile(r"/eventos/([0-9a-f]{24})", re.I)
 
 # Merchants que ya no son clientes (churn): fuera del selector y de los totales.
 CHURNED = ["VPP028"]
@@ -105,6 +110,116 @@ def merchant_filter(field: str, merchant: str) -> dict:
     return {field: merchant}
 
 
+# Colombia no tiene DST: el desfase con UTC es constante.
+COLOMBIA_UTC_OFFSET = timedelta(hours=-5)
+PRESET_HOURS = (24, 168, 720)
+
+
+def periodo(hours: Optional[int] = None, desde: str = "", hasta: str = "") -> dict:
+    """Traduce el filtro de tiempo a un rango de ObjectId.
+
+    Acepta dos formas excluyentes: un preset en horas (24/168/720) o un rango
+    de fechas YYYY-MM-DD. Las fechas que escribe el usuario son días naturales
+    de Colombia, así que se convierten a UTC antes de construir el ObjectId
+    (que siempre es UTC); sin ese ajuste el rango se corría 5 horas.
+
+    Devuelve gte/lt como ObjectId, más el bucket de agrupación de la serie
+    temporal (por hora si el rango es corto, por día si es largo).
+    """
+    if desde or hasta:
+        try:
+            d0 = datetime.strptime(desde, "%Y-%m-%d") if desde else None
+            d1 = datetime.strptime(hasta, "%Y-%m-%d") if hasta else None
+        except ValueError:
+            raise HTTPException(400, "las fechas deben venir como YYYY-MM-DD")
+        ahora_local = datetime.now(timezone.utc) - COLOMBIA_UTC_OFFSET
+        if d0 is None:
+            d0 = ahora_local - timedelta(days=30)
+        if d1 is None:
+            d1 = ahora_local
+        # 'hasta' es inclusivo para el usuario: el 13 incluye todo el día 13.
+        d1 = d1 + timedelta(days=1)
+        if d1 <= d0:
+            raise HTTPException(400, "la fecha final debe ser posterior a la inicial")
+        gte = d0 + COLOMBIA_UTC_OFFSET * -1
+        lt = d1 + COLOMBIA_UTC_OFFSET * -1
+        span_horas = (d1 - d0).total_seconds() / 3600
+        return {
+            "gte": ObjectId.from_datetime(gte.replace(tzinfo=timezone.utc)),
+            "lt": ObjectId.from_datetime(lt.replace(tzinfo=timezone.utc)),
+            "bucket": "%Y-%m-%d %H:00" if span_horas <= 48 else "%Y-%m-%d",
+            "etiqueta": f"{desde or 'inicio'} → {hasta or 'hoy'}",
+            "horas": span_horas,
+        }
+
+    h = hours or 168
+    if h not in PRESET_HOURS:
+        raise HTTPException(400, f"hours debe ser uno de {PRESET_HOURS} o usar desde/hasta")
+    return {
+        "gte": oid_since(h),
+        "lt": None,
+        "bucket": "%Y-%m-%d %H:00" if h == 24 else "%Y-%m-%d",
+        "etiqueta": {24: "últimas 24 h", 168: "últimos 7 días", 720: "últimos 30 días"}[h],
+        "horas": h,
+    }
+
+
+def rango_id(p: dict) -> dict:
+    """Cláusula _id lista para un $match a partir de periodo()."""
+    clause = {"$gte": p["gte"]}
+    if p["lt"] is not None:
+        clause["$lt"] = p["lt"]
+    return clause
+
+
+def evento_valido(evento: str) -> str:
+    """Normaliza el filtro por evento. Cadena vacía o ALL = sin filtro."""
+    evento = (evento or "").strip()
+    if not evento or evento == "ALL":
+        return ""
+    if not ObjectId.is_valid(evento):
+        raise HTTPException(400, "id de evento inválido")
+    return evento
+
+
+_merchant_de_evento_cache = {}
+
+
+def merchant_de_evento(evento: str) -> str:
+    """merchantRef dueño del evento, o '' si no se puede resolver.
+
+    Sirve para acotar los paneles de Clarity que aún no tienen desglose por
+    evento: es mucho más honesto caer al dominio del merchant dueño que a
+    'todos los dominios' cuando el selector está en ALL.
+    """
+    if not evento:
+        return ""
+    if evento in _merchant_de_evento_cache:
+        return _merchant_de_evento_cache[evento]
+    ref = ""
+    ev = db.events.find_one({"_id": ObjectId(evento)}, {"merchant": 1})
+    if ev and ev.get("merchant") is not None:
+        m = db.merchants.find_one({"_id": ev["merchant"].id}, {"merchantRef": 1})
+        ref = (m or {}).get("merchantRef") or ""
+    _merchant_de_evento_cache[evento] = ref
+    return ref
+
+
+def cart_ids_del_evento(evento: str, id_clause: dict, limite: int = 8000) -> list:
+    """Ids de carritos del evento en el periodo.
+
+    paymentIntents no guarda ni fecha ni evento: la única forma de acotarlo por
+    evento es pasar por los carritos y hacer el join con cartId.
+    """
+    return [
+        str(c["_id"])
+        for c in db.carts.find(
+            {"_id": id_clause, "ticketDetails.idEvent": evento}, {"_id": 1},
+            sort=[("_id", -1)], limit=limite,
+        )
+    ]
+
+
 def norm_method(m):
     if not m:
         return "OTRO"
@@ -146,13 +261,20 @@ def merchants():
 
 
 @app.get("/api/dashboard")
-def dashboard(merchant: str = "ALL", hours: int = 168):
-    if hours not in (24, 168, 720):
-        raise HTTPException(400, "hours debe ser 24, 168 o 720")
-    since = oid_since(hours)
-    cart_match = {"_id": {"$gte": since}, **merchant_filter("merchantRef", merchant)}
-    pi_match = {"_id": {"$gte": since}, **merchant_filter("merchantReference", merchant)}
-    tk_match = {"_id": {"$gte": since}, **merchant_filter("merchantReference", merchant)}
+def dashboard(merchant: str = "ALL", hours: int = 168, evento: str = "",
+              desde: str = "", hasta: str = ""):
+    p = periodo(hours, desde, hasta)
+    id_clause = rango_id(p)
+    evento = evento_valido(evento)
+
+    cart_match = {"_id": id_clause, **merchant_filter("merchantRef", merchant)}
+    pi_match = {"_id": id_clause, **merchant_filter("merchantReference", merchant)}
+    tk_match = {"_id": id_clause, **merchant_filter("merchantReference", merchant)}
+    if evento:
+        # El evento manda sobre el merchant: un evento pertenece a uno solo.
+        cart_match["ticketDetails.idEvent"] = evento
+        tk_match = {"_id": id_clause, "eventId": evento}
+        pi_match = {"cartId": {"$in": cart_ids_del_evento(evento, id_clause)}}
 
     by_status = {
         r["_id"]: r
@@ -177,11 +299,10 @@ def dashboard(merchant: str = "ALL", hours: int = 168):
         ),
     }
 
-    bucket = "%Y-%m-%d %H:00" if hours == 24 else "%Y-%m-%d"
     daily = list(db.carts.aggregate([
         {"$match": {**cart_match, "status": "APPROVED"}},
         {"$group": {
-            "_id": {"$dateToString": {"format": bucket, "date": "$dateCreation"}},
+            "_id": {"$dateToString": {"format": p["bucket"], "date": "$dateCreation"}},
             "revenue": {"$sum": {"$ifNull": ["$total", 0]}},
             "orders": {"$sum": 1},
         }},
@@ -229,6 +350,8 @@ def dashboard(merchant: str = "ALL", hours: int = 168):
     total_intents = pi_ok + pi_fail
     return {
         "actualizado": datetime.now(timezone.utc).isoformat(),
+        "periodo": p["etiqueta"],
+        "evento": evento,
         "kpis": {
             "ingresos": approved["total"],
             "ordenes": approved["n"],
@@ -251,11 +374,15 @@ def dashboard(merchant: str = "ALL", hours: int = 168):
 
 
 @app.get("/api/live")
-def live(merchant: str = "ALL", minutes: int = 60):
+def live(merchant: str = "ALL", minutes: int = 60, evento: str = ""):
     minutes = max(5, min(minutes, 360))
     since = oid_since(minutes / 60)
+    evento = evento_valido(evento)
     cart_match = {"_id": {"$gte": since}, **merchant_filter("merchantRef", merchant)}
     pi_match = {"_id": {"$gte": since}, **merchant_filter("merchantReference", merchant)}
+    if evento:
+        cart_match["ticketDetails.idEvent"] = evento
+        pi_match = {"cartId": {"$in": cart_ids_del_evento(evento, {"$gte": since}, 2000)}}
     names = merchant_names()
 
     by_status = {
@@ -347,23 +474,40 @@ def _parse_utm_query(q: str) -> dict:
     return parsed
 
 
-def _sources_for(cache: dict, merchant: str) -> tuple:
-    """Devuelve (dict de sources, etiqueta del ámbito) según el merchant."""
+def _sources_for(cache: dict, merchant: str, evento: str = "") -> tuple:
+    """Devuelve (dict de sources, etiqueta del ámbito, alcance).
+
+    El alcance dice si los números son del evento pedido o si hubo que caer al
+    dominio; el frontend lo muestra para que nadie lea una UTM de todo el
+    merchant creyendo que es la de un evento.
+    """
+    if evento:
+        del_evento = (cache.get("by_event") or {}).get(evento)
+        if del_evento:
+            return ({k.lower(): v for k, v in del_evento.items()}, "este evento", "evento")
+        domain = MERCHANT_DOMAINS.get(merchant) or MERCHANT_DOMAINS.get(merchant_de_evento(evento))
+        return (
+            {k.lower(): v for k, v in cache.get("by_domain", {}).get(domain, {}).items()}
+            if domain else {k.lower(): v for k, v in cache.get("sources", {}).items()},
+            domain or "todos los dominios",
+            "fallback_dominio",
+        )
     if merchant != "ALL":
         domain = MERCHANT_DOMAINS.get(merchant)
         return (
             {k.lower(): v for k, v in cache.get("by_domain", {}).get(domain, {}).items()},
             domain or "dominio desconocido",
+            "dominio",
         )
-    return ({k.lower(): v for k, v in cache.get("sources", {}).items()}, "todos los dominios")
+    return ({k.lower(): v for k, v in cache.get("sources", {}).items()}, "todos los dominios", "dominio")
 
 
 @app.get("/api/utm/buscar")
-def utm_buscar(q: str, merchant: str = "ALL"):
+def utm_buscar(q: str, merchant: str = "ALL", evento: str = ""):
     if not q.strip():
         raise HTTPException(400, "escribe o pega una UTM")
     cache = _read_utm_cache()
-    sources, ambito = _sources_for(cache, merchant)
+    sources, ambito, alcance = _sources_for(cache, merchant, evento_valido(evento))
     campaigns = {str(k).lower(): v for k, v in cache.get("campaigns", {}).items()}
     parsed = _parse_utm_query(q)
 
@@ -387,6 +531,7 @@ def utm_buscar(q: str, merchant: str = "ALL"):
     return {
         "consulta": parsed,
         "ambito": ambito,
+        "alcance": alcance,
         "source": resultado_source,
         "campaign": resultado_campaign,
         "similares": similares[:8],
@@ -396,26 +541,61 @@ def utm_buscar(q: str, merchant: str = "ALL"):
 
 
 @app.get("/api/utm/top")
-def utm_top(merchant: str = "ALL", limit: int = 30):
+def utm_top(merchant: str = "ALL", limit: int = 30, evento: str = ""):
     cache = _read_utm_cache()
-    sources, ambito = _sources_for(cache, merchant)
+    sources, ambito, alcance = _sources_for(cache, merchant, evento_valido(evento))
     top = [{"nombre": k, **_full_stats(v)} for k, v in sources.items()]
     top.sort(key=lambda x: -x["sesiones"])
     return {
         "updated": cache.get("updated"),
         "days": cache.get("days", 3),
         "ambito": ambito,
+        "alcance": alcance,
         "top": top[:limit],
     }
 
 
 GEO_CACHE = BASE / "geo_cache.json"
+EVGEO_CACHE = BASE / "evgeo_cache.json"
 
 
 @app.get("/api/geo")
-def geo(merchant: str = "ALL"):
+def geo(merchant: str = "ALL", evento: str = ""):
     cache = json.loads(GEO_CACHE.read_text()) if GEO_CACHE.exists() else {"by_domain": {}}
     by = cache.get("by_domain", {})
+    evento = evento_valido(evento)
+
+    # Un evento sí tiene desglose por ciudad propio: su página vive en
+    # /eventos/<id>, así que Clarity puede separarla del resto del dominio.
+    if evento:
+        evcache = json.loads(EVGEO_CACHE.read_text()) if EVGEO_CACHE.exists() else {}
+        del_evento = (evcache.get("by_event") or {}).get(evento)
+        if del_evento:
+            lista = [
+                {"ciudad": c, "sesiones": v.get("sesiones", 0),
+                 "checkout": v.get("checkout", 0), "compra": v.get("compra", 0),
+                 "tasa_compra": round(v.get("compra", 0) / v["sesiones"] * 100, 1) if v.get("sesiones") else 0}
+                for c, v in del_evento.items()
+            ]
+            lista.sort(key=lambda x: -x["sesiones"])
+            return {
+                "updated": evcache.get("updated"),
+                "days": evcache.get("days", 3),
+                "ambito": "este evento",
+                "alcance": "evento",
+                "ciudades": lista,
+                "nota": evcache.get("compras_cobertura", ""),
+            }
+        return {
+            "updated": evcache.get("updated"),
+            "days": evcache.get("days", 3),
+            "ambito": "este evento",
+            "alcance": "evento_sin_datos",
+            "ciudades": [],
+            "nota": "Clarity solo conserva 3 días de tráfico: si el evento no "
+                    "recibió visitas en esa ventana, no hay mapa para él.",
+        }
+
     if merchant != "ALL":
         domain = MERCHANT_DOMAINS.get(merchant)
         scoped = {domain: by.get(domain, {})} if domain else {}
@@ -439,7 +619,9 @@ def geo(merchant: str = "ALL"):
         "updated": cache.get("updated"),
         "days": cache.get("days", 3),
         "ambito": ambito,
+        "alcance": "dominio",
         "ciudades": lista,
+        "nota": "",
     }
 
 
@@ -609,10 +791,25 @@ TECH_CACHE = BASE / "tech_cache.json"
 
 
 @app.get("/api/tech")
-def tech(merchant: str = "ALL"):
+def tech(merchant: str = "ALL", evento: str = ""):
     cache = json.loads(TECH_CACHE.read_text()) if TECH_CACHE.exists() else {"by_domain": {}}
     by = cache.get("by_domain", {})
-    if merchant != "ALL":
+    evento = evento_valido(evento)
+    alcance = "dominio"
+
+    # by_event lo llena tools/clarity_refresh.py cruzando la dimensión URL con
+    # Device/Browser/OS. Si el refresco aún no ha corrido, se cae al dominio y
+    # el frontend lo avisa en vez de mentir con números del merchant entero.
+    if evento:
+        del_evento = (cache.get("by_event") or {}).get(evento)
+        if del_evento:
+            scoped, ambito, alcance = {evento: del_evento}, "este evento", "evento"
+        else:
+            domain = MERCHANT_DOMAINS.get(merchant) or MERCHANT_DOMAINS.get(merchant_de_evento(evento))
+            scoped = {domain: by.get(domain, {})} if domain else by
+            ambito = domain or "todos los dominios"
+            alcance = "fallback_dominio"
+    elif merchant != "ALL":
         domain = MERCHANT_DOMAINS.get(merchant)
         scoped = {domain: by.get(domain, {})} if domain else {}
         ambito = domain or "dominio desconocido"
@@ -635,6 +832,7 @@ def tech(merchant: str = "ALL"):
         "updated": cache.get("updated"),
         "days": cache.get("days", 3),
         "ambito": ambito,
+        "alcance": alcance,
         "dispositivos": listas["device"],
         "navegadores": listas["browser"],
         "sistemas": listas["os"],
@@ -656,21 +854,24 @@ def _extract_assistant(cart: dict) -> dict:
 
 
 @app.get("/api/abandonados")
-def abandonados(merchant: str = "ALL", hours: int = 168):
+def abandonados(merchant: str = "ALL", hours: int = 168, evento: str = "",
+                desde: str = "", hasta: str = ""):
     """Carritos abandonados que dejaron datos de contacto en el formulario de
     asistentes (ticketDetails.assistants). Son la lista de remarketing: alta
     intención, se les puede escribir o llamar.
 
     Excluye a quienes, después de abandonar, sí completaron una compra
     aprobada (mismo email) — ya no son un lead perdido."""
-    if hours not in (24, 168, 720):
-        raise HTTPException(400, "hours debe ser 24, 168 o 720")
-    since = oid_since(hours)
+    p = periodo(hours, desde, hasta)
+    id_clause = rango_id(p)
+    evento = evento_valido(evento)
     match = {
-        "_id": {"$gte": since},
+        "_id": id_clause,
         "status": {"$in": ABANDONED_STATUSES},
         **merchant_filter("merchantRef", merchant),
     }
+    if evento:
+        match["ticketDetails.idEvent"] = evento
     names = merchant_names()
 
     total_carts = 0
@@ -714,11 +915,13 @@ def abandonados(merchant: str = "ALL", hours: int = 168):
     # carrito APPROVED cuya fecha sea posterior al intento fallido.
     if by_email:
         approved_match = {
-            "_id": {"$gte": since},
+            "_id": id_clause,
             "status": "APPROVED",
             "ticketDetails.0": {"$exists": True},
             **merchant_filter("merchantRef", merchant),
         }
+        if evento:
+            approved_match["ticketDetails.idEvent"] = evento
         approved_cursor = db.carts.find(
             approved_match,
             {"ticketDetails": 1},
@@ -776,13 +979,24 @@ def _refresh_clarity_from_api(cache: dict) -> dict:
         payload = json.load(r)
 
     domains = {}
+    por_evento = {}
     prev = cache.get("domains", {})
+    prev_ev = cache.get("by_event", {})
     metric_map = {
         "Traffic": "sesiones",
         "DeadClickCount": "dead_clicks",
         "RageClickCount": "rage_clicks",
         "ScriptErrorCount": "errores_js",
     }
+
+    def _slot(destino, clave, previos):
+        return destino.setdefault(clave, {
+            "sesiones": 0, "usuarios": 0, "dead_clicks": 0,
+            "rage_clicks": 0, "errores_js": 0,
+            "checkout": previos.get(clave, {}).get("checkout", 0),
+            "compra": previos.get(clave, {}).get("compra", 0),
+        })
+
     for metric in payload:
         name = metric.get("metricName")
         if name not in metric_map:
@@ -792,29 +1006,34 @@ def _refresh_clarity_from_api(cache: dict) -> dict:
             host = url.split("//")[-1].split("/")[0].replace("www.", "")
             if not host:
                 continue
-            d = domains.setdefault(host, {
-                "sesiones": 0, "usuarios": 0, "dead_clicks": 0,
-                "rage_clicks": 0, "errores_js": 0,
-                "checkout": prev.get(host, {}).get("checkout", 0),
-                "compra": prev.get(host, {}).get("compra", 0),
-            })
-            if name == "Traffic":
-                d["sesiones"] += int(row.get("totalSessionCount", 0) or 0)
-                d["usuarios"] += int(row.get("distinctUserCount", 0) or 0)
-            else:
-                d[metric_map[name]] += int(row.get("subTotal", 0) or 0)
+            # La misma respuesta sirve para los dos niveles: la página de un
+            # evento es /eventos/<id>, así que de la URL sale también su
+            # desglose propio. Sin esto el refresco automático borraría el
+            # by_event que deja tools/clarity_refresh.py.
+            ev = RE_EVENTO_URL.search(url)
+            objetivos = [_slot(domains, host, prev)]
+            if ev:
+                objetivos.append(_slot(por_evento, ev.group(1).lower(), prev_ev))
+            for d in objetivos:
+                if name == "Traffic":
+                    d["sesiones"] += int(row.get("totalSessionCount", 0) or 0)
+                    d["usuarios"] += int(row.get("distinctUserCount", 0) or 0)
+                else:
+                    d[metric_map[name]] += int(row.get("subTotal", 0) or 0)
 
     return {
         "updated": datetime.now(timezone.utc).isoformat(),
         "days": 3,
         "source": "clarity-export-api",
         "domains": domains,
+        "by_event": por_evento or prev_ev,
     }
 
 
 @app.get("/api/clarity")
-def clarity(merchant: str = "ALL"):
+def clarity(merchant: str = "ALL", evento: str = ""):
     cache = json.loads(CLARITY_CACHE.read_text()) if CLARITY_CACHE.exists() else {"domains": {}}
+    evento = evento_valido(evento)
     updated = cache.get("updated")
     age = None
     if updated:
@@ -829,7 +1048,19 @@ def clarity(merchant: str = "ALL"):
             pass  # sirve el caché existente; el token puede haber agotado sus 10 req/día
 
     domains = cache.get("domains", {})
-    if merchant == "ALL":
+    alcance = "dominio"
+
+    if evento:
+        # La página del evento es una URL propia, así que Clarity sí puede dar
+        # sus dead/rage clicks por separado (lo llena clarity_refresh.py).
+        del_evento = (cache.get("by_event") or {}).get(evento)
+        if del_evento:
+            data, domain, alcance = del_evento, "este evento", "evento"
+        else:
+            domain = MERCHANT_DOMAINS.get(merchant) or MERCHANT_DOMAINS.get(merchant_de_evento(evento))
+            data = domains.get(domain) if domain else None
+            alcance = "fallback_dominio"
+    elif merchant == "ALL":
         agg = {"sesiones": 0, "usuarios": 0, "dead_clicks": 0, "rage_clicks": 0,
                "errores_js": 0, "checkout": 0, "compra": 0}
         for d in domains.values():
@@ -846,7 +1077,73 @@ def clarity(merchant: str = "ALL"):
         "days": cache.get("days", 3),
         "stale_horas": round(age / 3600, 1) if age else 0,
         "auto_refresh": bool(ENV.get("CLARITY_API_TOKEN")),
+        "alcance": alcance,
         "data": data,
+    }
+
+
+HISTORIAL_CLARITY = BASE / "historial_clarity.json"
+
+
+@app.get("/api/historial")
+def historial(merchant: str = "ALL", evento: str = ""):
+    """Serie histórica propia de Clarity, más allá de su ventana de 3 días.
+
+    La arma tools/clarity_historial.py: una captura por fecha. Como conviven
+    capturas de 1 día (las automáticas) con las heredadas de 3 días, la serie
+    se expone normalizada a sesiones/día — es la única forma de ponerlas en el
+    mismo eje sin exagerar las de ventana ancha.
+    """
+    evento = evento_valido(evento)
+    if not HISTORIAL_CLARITY.exists():
+        return {"serie": [], "alcance": "sin_datos", "ambito": "", "capturas": 0}
+
+    hist = json.loads(HISTORIAL_CLARITY.read_text())
+    capturas = hist.get("capturas", {})
+
+    if evento:
+        clave, grupo, ambito, alcance = evento, "eventos", "este evento", "evento"
+    elif merchant != "ALL":
+        clave = MERCHANT_DOMAINS.get(merchant)
+        grupo, ambito, alcance = "dominios", clave or "dominio desconocido", "dominio"
+    else:
+        clave, grupo, ambito, alcance = None, "dominios", "todos los dominios", "global"
+
+    serie = []
+    for fecha in sorted(capturas):
+        dia = capturas[fecha]
+        fichas = dia.get(grupo, {})
+        if clave is None:
+            elegidas = list(fichas.values())          # global: suma de dominios
+        elif clave in fichas:
+            elegidas = [fichas[clave]]
+        else:
+            continue
+
+        ventana = dia.get("ventana_dias") or 1
+        agregado = {c: sum(f.get(c) or 0 for f in elegidas)
+                    for c in ("sesiones", "usuarios", "dead_clicks", "rage_clicks", "errores_js")}
+        ciudades = {}
+        for f in elegidas:
+            for ciudad, n in (f.get("ciudades") or {}).items():
+                ciudades[ciudad] = ciudades.get(ciudad, 0) + n
+
+        serie.append({
+            "fecha": fecha,
+            "ventana_dias": ventana,
+            **agregado,
+            # Comparable entre capturas de distinta ventana.
+            "sesiones_dia": round(agregado["sesiones"] / ventana, 1),
+            "top_ciudades": sorted(ciudades.items(), key=lambda x: -x[1])[:5],
+            "fuentes": dia.get("fuentes", []),
+        })
+
+    return {
+        "serie": serie,
+        "alcance": alcance,
+        "ambito": ambito,
+        "capturas": len(capturas),
+        "mezcla_ventanas": len({p["ventana_dias"] for p in serie}) > 1,
     }
 
 

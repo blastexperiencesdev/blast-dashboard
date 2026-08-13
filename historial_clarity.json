@@ -1,0 +1,2657 @@
+{
+ "capturas": {
+  "2026-07-07": {
+   "capturado": "2026-08-13T21:39:31.343503+00:00",
+   "dominios": {
+    "augetickets.com": {
+     "ciudades": {},
+     "dead_clicks": 0,
+     "dispositivos": {
+      "Mobile": 2
+     },
+     "errores_js": 0,
+     "navegadores": {},
+     "rage_clicks": 0,
+     "sesiones": 0,
+     "sistemas": {
+      "iOS": 2
+     },
+     "usuarios": 0,
+     "utm": {
+      "direct": 1,
+      "ig": 1
+     }
+    },
+    "blasttickets.com": {
+     "ciudades": {
+      "(sin ciudad)": 17,
+      "Barranquilla": 9,
+      "Bogotá": 414,
+      "Bucaramanga": 13,
+      "Cali": 12,
+      "Chía": 9,
+      "Dallas": 2,
+      "Fontibón": 7,
+      "Fusagasugá": 1,
+      "Kennedy": 8,
+      "Madrid": 8,
+      "Manizales": 9,
+      "Medellín": 76,
+      "Mosquera": 1,
+      "Neiva": 12,
+      "Paipa": 2,
+      "Palmira": 8,
+      "Pereira": 6,
+      "Remedios": 2,
+      "Rionegro": 17,
+      "San José del Guaviare": 1,
+      "Santa Marta": 1,
+      "Soacha": 15,
+      "Tunja": 6,
+      "Zipaquirá": 6
+     },
+     "dead_clicks": 177,
+     "dispositivos": {
+      "Mobile": 672,
+      "PC": 106,
+      "Tablet": 6
+     },
+     "errores_js": 9,
+     "navegadores": {
+      "Chrome": 93,
+      "Chrome Mobile": 274,
+      "Edge": 12,
+      "Edge Mobile": 3,
+      "Safari": 5,
+      "Safari Mobile": 133,
+      "Samsung Internet": 24,
+      "WebView (in-app)": 236
+     },
+     "rage_clicks": 26,
+     "sesiones": 780,
+     "sistemas": {
+      "Android": 380,
+      "Linux": 2,
+      "MacOS": 12,
+      "Windows": 92,
+      "iOS": 298
+     },
+     "usuarios": 636,
+     "utm": {
+      "bing": 1,
+      "cenfer.com": 1,
+      "direct": 473,
+      "facebook.com": 4,
+      "google": 66,
+      "ig": 47,
+      "instagram.com": 4,
+      "l.facebook.com": 18,
+      "l.instagram.com": 69,
+      "l.wl.co": 2,
+      "linktr.ee": 6,
+      "lm.facebook.com": 42,
+      "m.facebook.com": 21,
+      "transaction-redirect.wompi.co": 14,
+      "www.bandsintown.com": 5,
+      "www.blasttickets.com": 19,
+      "www.tiktok.com": 23
+     }
+    },
+    "elsellotickets.com": {
+     "ciudades": {
+      "(sin ciudad)": 5,
+      "Bogotá": 38,
+      "Cali": 17,
+      "Medellín": 10
+     },
+     "dead_clicks": 14,
+     "dispositivos": {
+      "Mobile": 94,
+      "PC": 5
+     },
+     "errores_js": 17,
+     "navegadores": {
+      "Chrome": 4,
+      "Chrome Mobile": 17,
+      "Safari Mobile": 2,
+      "WebView (in-app)": 74
+     },
+     "rage_clicks": 0,
+     "sesiones": 99,
+     "sistemas": {
+      "Android": 66,
+      "Windows": 5,
+      "iOS": 28
+     },
+     "usuarios": 99,
+     "utm": {
+      "direct": 13,
+      "elsellotickets.com": 1,
+      "fb": 44,
+      "google": 13,
+      "ig": 21,
+      "instagram.com": 3,
+      "l.instagram.com": 5,
+      "m.facebook.com": 4,
+      "www.elsellotickets.com": 2,
+      "www.nolederabiarecords.com": 4
+     }
+    },
+    "gerizimproducciones.com": {
+     "ciudades": {},
+     "dead_clicks": 0,
+     "dispositivos": {
+      "PC": 1
+     },
+     "errores_js": 0,
+     "navegadores": {},
+     "rage_clicks": 0,
+     "sesiones": 0,
+     "sistemas": {
+      "Linux": 1
+     },
+     "usuarios": 0,
+     "utm": {}
+    },
+    "lamtickets.com": {
+     "ciudades": {
+      "(sin ciudad)": 8,
+      "Barranquilla": 5,
+      "Bello": 6,
+      "Bogotá": 15,
+      "Envigado": 6,
+      "Itagüí": 5,
+      "Medellín": 114,
+      "Rionegro": 8
+     },
+     "dead_clicks": 40,
+     "dispositivos": {
+      "Mobile": 159,
+      "PC": 19
+     },
+     "errores_js": 2,
+     "navegadores": {
+      "Chrome": 11,
+      "Chrome Mobile": 63,
+      "Edge": 4,
+      "Firefox": 4,
+      "Safari Mobile": 44,
+      "Samsung Internet": 5,
+      "WebView (in-app)": 47
+     },
+     "rage_clicks": 2,
+     "sesiones": 178,
+     "sistemas": {
+      "Android": 66,
+      "MacOS": 3,
+      "Windows": 16,
+      "iOS": 93
+     },
+     "usuarios": 131,
+     "utm": {
+      "bing": 2,
+      "bing.com": 1,
+      "direct": 81,
+      "google": 14,
+      "ig": 8,
+      "l.instagram.com": 1,
+      "l.wl.co": 6,
+      "linktr.ee": 25,
+      "urbanfestmedellin.com": 44,
+      "www.lamtickets.com": 4
+     }
+    },
+    "reboletos.com": {
+     "ciudades": {},
+     "dead_clicks": 0,
+     "dispositivos": {
+      "Mobile": 1,
+      "PC": 2
+     },
+     "errores_js": 0,
+     "navegadores": {},
+     "rage_clicks": 0,
+     "sesiones": 3,
+     "sistemas": {
+      "Windows": 2,
+      "iOS": 1
+     },
+     "usuarios": 3,
+     "utm": {
+      "direct": 3
+     }
+    },
+    "sinerror.com": {
+     "ciudades": {
+      "(sin ciudad)": 24,
+      "Barranquilla": 6,
+      "Bogotá": 316,
+      "Brisbane": 5,
+      "Bucaramanga": 7,
+      "Cali": 11,
+      "Chía": 9,
+      "Duitama": 6,
+      "Envigado": 1,
+      "Fontibón": 1,
+      "Kennedy": 9,
+      "Madrid": 7,
+      "Medellín": 53,
+      "Mosquera": 5,
+      "Palmira": 7,
+      "Pereira": 8,
+      "Saravena": 1,
+      "Soacha": 10,
+      "Sogamoso": 1,
+      "Suba": 5,
+      "Tunja": 58
+     },
+     "dead_clicks": 77,
+     "dispositivos": {
+      "Mobile": 571,
+      "PC": 67,
+      "Tablet": 3
+     },
+     "errores_js": 6,
+     "navegadores": {
+      "Chrome": 49,
+      "Chrome Mobile": 186,
+      "Edge": 9,
+      "Opera": 6,
+      "Safari": 2,
+      "Safari Mobile": 50,
+      "Samsung Internet": 6,
+      "WebView (in-app)": 330
+     },
+     "rage_clicks": 1,
+     "sesiones": 632,
+     "sistemas": {
+      "Android": 364,
+      "ChromeOS": 1,
+      "Linux": 7,
+      "MacOS": 7,
+      "Windows": 52,
+      "iOS": 210
+     },
+     "usuarios": 546,
+     "utm": {
+      "direct": 75,
+      "facebook.com": 3,
+      "google": 34,
+      "ig": 46,
+      "instagram.com": 5,
+      "l.instagram.com": 156,
+      "linktr.ee": 7,
+      "linktree_profile_share": 1,
+      "m.facebook.com": 4,
+      "rupatrupa.com": 291,
+      "transaction-redirect.wompi.co": 6,
+      "www.bandsintown.com": 3,
+      "www.matacandelas.com": 1,
+      "www.pedropastorguerra.com": 17,
+      "www.sinerror.com": 18
+     }
+    },
+    "supereventosticket.com": {
+     "ciudades": {
+      "(sin ciudad)": 5,
+      "Barranquilla": 10,
+      "Bogotá": 95,
+      "Cartagena": 11,
+      "Ibagué": 33,
+      "La Dorada": 1,
+      "Lilburn": 1,
+      "Medellín": 24,
+      "Neiva": 5,
+      "Soacha": 5
+     },
+     "dead_clicks": 17,
+     "dispositivos": {
+      "Mobile": 219,
+      "PC": 20,
+      "Tablet": 1
+     },
+     "errores_js": 8,
+     "navegadores": {
+      "Chrome": 15,
+      "Chrome Mobile": 9,
+      "Safari": 4,
+      "Safari Mobile": 7,
+      "WebView (in-app)": 204
+     },
+     "rage_clicks": 0,
+     "sesiones": 240,
+     "sistemas": {
+      "Android": 157,
+      "Linux": 4,
+      "MacOS": 7,
+      "Windows": 9,
+      "iOS": 63
+     },
+     "usuarios": 221,
+     "utm": {
+      "direct": 24,
+      "eventhubsas.com": 1,
+      "facebook.com": 1,
+      "fb": 27,
+      "google": 4,
+      "ig": 153,
+      "l.instagram.com": 33,
+      "l.wl.co": 3,
+      "m.facebook.com": 2,
+      "www.supereventosticket.com": 3
+     }
+    },
+    "taquillaone.com": {
+     "ciudades": {},
+     "dead_clicks": 0,
+     "dispositivos": {
+      "Mobile": 1
+     },
+     "errores_js": 0,
+     "navegadores": {},
+     "rage_clicks": 0,
+     "sesiones": 0,
+     "sistemas": {
+      "iOS": 1
+     },
+     "usuarios": 0,
+     "utm": {
+      "ig": 1
+     }
+    },
+    "taquiya.co": {
+     "ciudades": {
+      "Barranquilla": 30,
+      "Bogotá": 27,
+      "Cali": 9,
+      "Cartagena": 37,
+      "Concepción de la Vega": 1,
+      "Florencia": 5,
+      "Medellín": 16,
+      "Pereira": 2,
+      "Santa Marta": 7,
+      "Soledad": 1,
+      "Valledupar": 7
+     },
+     "dead_clicks": 71,
+     "dispositivos": {
+      "Mobile": 158,
+      "PC": 19
+     },
+     "errores_js": 0,
+     "navegadores": {
+      "Chrome": 17,
+      "Chrome Mobile": 72,
+      "Edge": 2,
+      "Safari Mobile": 37,
+      "Samsung Internet": 3,
+      "WebView (in-app)": 45
+     },
+     "rage_clicks": 13,
+     "sesiones": 176,
+     "sistemas": {
+      "Android": 89,
+      "MacOS": 1,
+      "Windows": 18,
+      "iOS": 69
+     },
+     "usuarios": 134,
+     "utm": {
+      "bing": 2,
+      "chatgpt.com": 3,
+      "checkout.wompi.co": 1,
+      "direct": 54,
+      "facebook.com": 5,
+      "google": 71,
+      "ig": 1,
+      "l.instagram.com": 1,
+      "l.wl.co": 5,
+      "lm.facebook.com": 14,
+      "m.facebook.com": 11,
+      "transaction-redirect.wompi.co": 1,
+      "www.taquiya.co": 13,
+      "www.tiktok.com": 2
+     }
+    },
+    "tickets.3diazproducciones.com": {
+     "ciudades": {
+      "(sin ciudad)": 16,
+      "Armenia": 13,
+      "Barranquilla": 6,
+      "Bello": 1,
+      "Bogotá": 278,
+      "Cali": 15,
+      "Cartagena": 5,
+      "Chía": 5,
+      "Ibagué": 318,
+      "Kennedy": 5,
+      "Medellín": 32,
+      "Neiva": 5,
+      "Pereira": 11,
+      "Puerto Salgar": 8,
+      "Soacha": 5,
+      "Tumaco": 1
+     },
+     "dead_clicks": 113,
+     "dispositivos": {
+      "Mobile": 760,
+      "PC": 17,
+      "Tablet": 2
+     },
+     "errores_js": 18,
+     "navegadores": {
+      "Chrome": 15,
+      "Chrome Mobile": 197,
+      "Edge": 2,
+      "Safari Mobile": 29,
+      "Samsung Internet": 8,
+      "WebView (in-app)": 525
+     },
+     "rage_clicks": 33,
+     "sesiones": 779,
+     "sistemas": {
+      "Android": 555,
+      "Ubuntu": 1,
+      "Windows": 16,
+      "iOS": 207
+     },
+     "usuarios": 700,
+     "utm": {
+      "an": 130,
+      "direct": 55,
+      "facebook.com": 10,
+      "fb": 487,
+      "google": 3,
+      "ig": 38,
+      "instagram.com": 1,
+      "lm.facebook.com": 3,
+      "m.facebook.com": 37,
+      "taplink.cc": 2,
+      "transaction-redirect.wompi.co": 7,
+      "www.3diazproducciones.com": 10,
+      "www.tickets.3diazproducciones.com": 32
+     }
+    },
+    "tickets.gerizimproducciones.com": {
+     "ciudades": {},
+     "dead_clicks": 0,
+     "dispositivos": {
+      "PC": 1
+     },
+     "errores_js": 0,
+     "navegadores": {},
+     "rage_clicks": 0,
+     "sesiones": 0,
+     "sistemas": {
+      "Linux": 1
+     },
+     "usuarios": 0,
+     "utm": {
+      "direct": 1
+     }
+    },
+    "ventas.ticketplatino.com": {
+     "ciudades": {
+      "(sin ciudad)": 6,
+      "Medellín": 6,
+      "Phoenix": 1,
+      "Popayán": 8
+     },
+     "dead_clicks": 4,
+     "dispositivos": {
+      "Mobile": 25,
+      "PC": 10
+     },
+     "errores_js": 0,
+     "navegadores": {
+      "Chrome": 8,
+      "Chrome Mobile": 15,
+      "Safari Mobile": 8,
+      "WebView (in-app)": 2
+     },
+     "rage_clicks": 0,
+     "sesiones": 35,
+     "sistemas": {
+      "Android": 13,
+      "Linux": 4,
+      "MacOS": 1,
+      "Windows": 5,
+      "iOS": 12
+     },
+     "usuarios": 28,
+     "utm": {
+      "checkout.avalpaycenter.com": 1,
+      "direct": 11,
+      "google": 1,
+      "ticketplatino.com": 22
+     }
+    }
+   },
+   "eventos": {
+    "6787f34c0ec7361af68873a3": {
+     "ciudades": {
+      "Bogotá": 10,
+      "Medellín": 3
+     },
+     "dead_clicks": 0,
+     "dispositivos": {},
+     "errores_js": 0,
+     "navegadores": {},
+     "rage_clicks": 0,
+     "sesiones": 13,
+     "sistemas": {},
+     "usuarios": 0,
+     "utm": {}
+    },
+    "679d7c1c86b0c5f5461d207a": {
+     "ciudades": {
+      "Bogotá": 2
+     },
+     "dead_clicks": 0,
+     "dispositivos": {},
+     "errores_js": 0,
+     "navegadores": {},
+     "rage_clicks": 0,
+     "sesiones": 2,
+     "sistemas": {},
+     "usuarios": 0,
+     "utm": {}
+    },
+    "67ae6e877e0e5574e1380b36": {
+     "ciudades": {
+      "Bogotá": 8
+     },
+     "dead_clicks": 0,
+     "dispositivos": {},
+     "errores_js": 0,
+     "navegadores": {},
+     "rage_clicks": 0,
+     "sesiones": 8,
+     "sistemas": {},
+     "usuarios": 0,
+     "utm": {}
+    },
+    "67eab8b489f45854b33a27c2": {
+     "ciudades": {
+      "Bogotá": 3
+     },
+     "dead_clicks": 0,
+     "dispositivos": {},
+     "errores_js": 0,
+     "navegadores": {},
+     "rage_clicks": 0,
+     "sesiones": 3,
+     "sistemas": {},
+     "usuarios": 0,
+     "utm": {}
+    },
+    "688be6acc9c10d2de706dcd2": {
+     "ciudades": {
+      "Bogotá": 7
+     },
+     "dead_clicks": 0,
+     "dispositivos": {},
+     "errores_js": 0,
+     "navegadores": {},
+     "rage_clicks": 0,
+     "sesiones": 7,
+     "sistemas": {},
+     "usuarios": 0,
+     "utm": {}
+    },
+    "68c58897de95587df7fa5191": {
+     "ciudades": {
+      "(sin ciudad)": 6,
+      "Armenia": 4,
+      "Bogotá": 110,
+      "Cali": 10,
+      "Cartagena": 2,
+      "Ibagué": 131,
+      "Medellín": 13,
+      "Pereira": 4,
+      "Puerto Salgar": 3
+     },
+     "dead_clicks": 0,
+     "dispositivos": {},
+     "errores_js": 0,
+     "navegadores": {},
+     "rage_clicks": 0,
+     "sesiones": 283,
+     "sistemas": {},
+     "usuarios": 0,
+     "utm": {}
+    },
+    "68c58932de95587df7fa519e": {
+     "ciudades": {
+      "(sin ciudad)": 6,
+      "Armenia": 3,
+      "Bogotá": 58,
+      "Cali": 9,
+      "Ibagué": 61,
+      "Kennedy": 3,
+      "Medellín": 6,
+      "Neiva": 3,
+      "Pereira": 8
+     },
+     "dead_clicks": 0,
+     "dispositivos": {},
+     "errores_js": 0,
+     "navegadores": {},
+     "rage_clicks": 0,
+     "sesiones": 157,
+     "sistemas": {},
+     "usuarios": 0,
+     "utm": {}
+    },
+    "6908b1b9cf2bd56d86bf90f9": {
+     "ciudades": {
+      "Bogotá": 3
+     },
+     "dead_clicks": 0,
+     "dispositivos": {},
+     "errores_js": 0,
+     "navegadores": {},
+     "rage_clicks": 0,
+     "sesiones": 3,
+     "sistemas": {},
+     "usuarios": 0,
+     "utm": {}
+    },
+    "6946e83e316cd81e583a7d1d": {
+     "ciudades": {
+      "(sin ciudad)": 4,
+      "Bogotá": 25,
+      "Ibagué": 19,
+      "Neiva": 3
+     },
+     "dead_clicks": 0,
+     "dispositivos": {},
+     "errores_js": 0,
+     "navegadores": {},
+     "rage_clicks": 0,
+     "sesiones": 51,
+     "sistemas": {},
+     "usuarios": 0,
+     "utm": {}
+    },
+    "697abd75fe16082beea162d6": {
+     "ciudades": {
+      "Barranquilla": 4,
+      "Bello": 6,
+      "Bogotá": 7,
+      "Envigado": 3,
+      "Itagüí": 4,
+      "Medellín": 76,
+      "Miami": 2,
+      "Rionegro": 4
+     },
+     "dead_clicks": 0,
+     "dispositivos": {},
+     "errores_js": 0,
+     "navegadores": {},
+     "rage_clicks": 0,
+     "sesiones": 106,
+     "sistemas": {},
+     "usuarios": 0,
+     "utm": {}
+    },
+    "698230aadcc0a374dc9afcaa": {
+     "ciudades": {
+      "Bogotá": 3
+     },
+     "dead_clicks": 0,
+     "dispositivos": {},
+     "errores_js": 0,
+     "navegadores": {},
+     "rage_clicks": 0,
+     "sesiones": 3,
+     "sistemas": {},
+     "usuarios": 0,
+     "utm": {}
+    },
+    "69ba9f32abcbcb520050a194": {
+     "ciudades": {
+      "Barranquilla": 20,
+      "Bogotá": 16,
+      "Cali": 5,
+      "Cartagena": 22,
+      "Concepción de la Vega": 2,
+      "Medellín": 7,
+      "Montería": 4,
+      "Santa Marta": 5,
+      "Soledad": 2,
+      "Valledupar": 6
+     },
+     "dead_clicks": 0,
+     "dispositivos": {},
+     "errores_js": 0,
+     "navegadores": {},
+     "rage_clicks": 0,
+     "sesiones": 89,
+     "sistemas": {},
+     "usuarios": 0,
+     "utm": {}
+    },
+    "69cb0a16423b115decc727bb": {
+     "ciudades": {
+      "Bogotá": 18,
+      "Medellín": 3
+     },
+     "dead_clicks": 0,
+     "dispositivos": {},
+     "errores_js": 0,
+     "navegadores": {},
+     "rage_clicks": 0,
+     "sesiones": 21,
+     "sistemas": {},
+     "usuarios": 0,
+     "utm": {}
+    },
+    "69d6df66cce61a50e2f3d677": {
+     "ciudades": {
+      "(sin ciudad)": 2,
+      "Barranquilla": 3,
+      "Bogotá": 3
+     },
+     "dead_clicks": 0,
+     "dispositivos": {},
+     "errores_js": 0,
+     "navegadores": {},
+     "rage_clicks": 0,
+     "sesiones": 8,
+     "sistemas": {},
+     "usuarios": 0,
+     "utm": {}
+    },
+    "69dfff859581af71e646fdd1": {
+     "ciudades": {
+      "(sin ciudad)": 3,
+      "Bogotá": 10,
+      "Duitama": 3,
+      "Medellín": 3,
+      "Tunja": 16
+     },
+     "dead_clicks": 0,
+     "dispositivos": {},
+     "errores_js": 0,
+     "navegadores": {},
+     "rage_clicks": 0,
+     "sesiones": 35,
+     "sistemas": {},
+     "usuarios": 0,
+     "utm": {}
+    },
+    "69e00ff79581af71e646ffce": {
+     "ciudades": {
+      "Bogotá": 6,
+      "Brisbane": 4
+     },
+     "dead_clicks": 0,
+     "dispositivos": {},
+     "errores_js": 0,
+     "navegadores": {},
+     "rage_clicks": 0,
+     "sesiones": 10,
+     "sistemas": {},
+     "usuarios": 0,
+     "utm": {}
+    },
+    "69e78a6b39597949e473811c": {
+     "ciudades": {
+      "Bogotá": 3,
+      "Cali": 5,
+      "Medellín": 4,
+      "Phoenix": 2,
+      "Popayán": 4
+     },
+     "dead_clicks": 0,
+     "dispositivos": {},
+     "errores_js": 0,
+     "navegadores": {},
+     "rage_clicks": 0,
+     "sesiones": 18,
+     "sistemas": {},
+     "usuarios": 0,
+     "utm": {}
+    },
+    "69f2844d2b0f632110e41200": {
+     "ciudades": {
+      "Bogotá": 36,
+      "Bucaramanga": 5,
+      "Tunja": 2
+     },
+     "dead_clicks": 0,
+     "dispositivos": {},
+     "errores_js": 0,
+     "navegadores": {},
+     "rage_clicks": 0,
+     "sesiones": 43,
+     "sistemas": {},
+     "usuarios": 0,
+     "utm": {}
+    },
+    "6a0e0bcf8445bc2fc2649c4f": {
+     "ciudades": {
+      "Medellín": 6
+     },
+     "dead_clicks": 0,
+     "dispositivos": {},
+     "errores_js": 0,
+     "navegadores": {},
+     "rage_clicks": 0,
+     "sesiones": 6,
+     "sistemas": {},
+     "usuarios": 0,
+     "utm": {}
+    },
+    "6a106965a1f51759899ca7a4": {
+     "ciudades": {
+      "Bogotá": 6
+     },
+     "dead_clicks": 0,
+     "dispositivos": {},
+     "errores_js": 0,
+     "navegadores": {},
+     "rage_clicks": 0,
+     "sesiones": 6,
+     "sistemas": {},
+     "usuarios": 0,
+     "utm": {}
+    },
+    "6a207a817e82b422f858517c": {
+     "ciudades": {
+      "Bogotá": 7
+     },
+     "dead_clicks": 0,
+     "dispositivos": {},
+     "errores_js": 0,
+     "navegadores": {},
+     "rage_clicks": 0,
+     "sesiones": 7,
+     "sistemas": {},
+     "usuarios": 0,
+     "utm": {}
+    },
+    "6a22f6412dcd7370ff125582": {
+     "ciudades": {
+      "Medellín": 2
+     },
+     "dead_clicks": 0,
+     "dispositivos": {},
+     "errores_js": 0,
+     "navegadores": {},
+     "rage_clicks": 0,
+     "sesiones": 2,
+     "sistemas": {},
+     "usuarios": 0,
+     "utm": {}
+    },
+    "6a2b033c1fc3665ce3206392": {
+     "ciudades": {
+      "Medellín": 3
+     },
+     "dead_clicks": 0,
+     "dispositivos": {},
+     "errores_js": 0,
+     "navegadores": {},
+     "rage_clicks": 0,
+     "sesiones": 3,
+     "sistemas": {},
+     "usuarios": 0,
+     "utm": {}
+    },
+    "6a2c2f221fc3665ce32080ef": {
+     "ciudades": {
+      "Bogotá": 7
+     },
+     "dead_clicks": 0,
+     "dispositivos": {},
+     "errores_js": 0,
+     "navegadores": {},
+     "rage_clicks": 0,
+     "sesiones": 7,
+     "sistemas": {},
+     "usuarios": 0,
+     "utm": {}
+    },
+    "6a358c6a9e378824d74ecfb8": {
+     "ciudades": {
+      "Bogotá": 9,
+      "Manizales": 12
+     },
+     "dead_clicks": 0,
+     "dispositivos": {},
+     "errores_js": 0,
+     "navegadores": {},
+     "rage_clicks": 0,
+     "sesiones": 21,
+     "sistemas": {},
+     "usuarios": 0,
+     "utm": {}
+    },
+    "6a397b933481881953a69f80": {
+     "ciudades": {
+      "Bogotá": 10,
+      "Medellín": 3,
+      "Pereira": 2,
+      "Suba": 2
+     },
+     "dead_clicks": 0,
+     "dispositivos": {},
+     "errores_js": 0,
+     "navegadores": {},
+     "rage_clicks": 0,
+     "sesiones": 17,
+     "sistemas": {},
+     "usuarios": 0,
+     "utm": {}
+    },
+    "6a397d133481881953a69f9e": {
+     "ciudades": {
+      "Medellín": 3
+     },
+     "dead_clicks": 0,
+     "dispositivos": {},
+     "errores_js": 0,
+     "navegadores": {},
+     "rage_clicks": 0,
+     "sesiones": 3,
+     "sistemas": {},
+     "usuarios": 0,
+     "utm": {}
+    },
+    "6a39b97d60a1293707f785dc": {
+     "ciudades": {
+      "(sin ciudad)": 25,
+      "Barcelona": 3,
+      "Barranquilla": 5,
+      "Benito Juarez": 3,
+      "Bogotá": 187,
+      "Bucaramanga": 8,
+      "Cali": 15,
+      "Chía": 6,
+      "Duitama": 5,
+      "Kennedy": 5,
+      "La Unión": 2,
+      "Madrid": 6,
+      "Medellín": 45,
+      "Mosquera": 3,
+      "Málaga": 3,
+      "Ocaña": 2,
+      "Palmira": 6,
+      "Pasto": 3,
+      "Pereira": 4,
+      "San Salvador": 2,
+      "Santa Marta": 3,
+      "Santiago": 4,
+      "Saravena": 3,
+      "Soacha": 10,
+      "Suba": 4,
+      "Tijuana": 3,
+      "Tunja": 45,
+      "Villavicencio": 4,
+      "Yumbo": 3
+     },
+     "dead_clicks": 0,
+     "dispositivos": {},
+     "errores_js": 0,
+     "navegadores": {},
+     "rage_clicks": 0,
+     "sesiones": 417,
+     "sistemas": {},
+     "usuarios": 0,
+     "utm": {}
+    },
+    "6a39bbe960a1293707f7864f": {
+     "ciudades": {
+      "Bogotá": 137,
+      "Bucaramanga": 2,
+      "Cali": 4,
+      "Chía": 3,
+      "Cúcuta": 3,
+      "Kennedy": 3,
+      "Medellín": 12,
+      "Soacha": 10
+     },
+     "dead_clicks": 0,
+     "dispositivos": {},
+     "errores_js": 0,
+     "navegadores": {},
+     "rage_clicks": 0,
+     "sesiones": 174,
+     "sistemas": {},
+     "usuarios": 0,
+     "utm": {}
+    },
+    "6a3c67e9afe53a33828e3a35": {
+     "ciudades": {
+      "Barranquilla": 2,
+      "Bogotá": 25,
+      "Cali": 3,
+      "Envigado": 2,
+      "Ibagué": 2,
+      "Medellín": 33,
+      "Rionegro": 17
+     },
+     "dead_clicks": 0,
+     "dispositivos": {},
+     "errores_js": 0,
+     "navegadores": {},
+     "rage_clicks": 0,
+     "sesiones": 84,
+     "sistemas": {},
+     "usuarios": 0,
+     "utm": {}
+    },
+    "6a3dac145d626314c9b28bdb": {
+     "ciudades": {
+      "(sin ciudad)": 3,
+      "Bogotá": 5,
+      "Cali": 13,
+      "Popayán": 3,
+      "Yumbo": 2
+     },
+     "dead_clicks": 0,
+     "dispositivos": {},
+     "errores_js": 0,
+     "navegadores": {},
+     "rage_clicks": 0,
+     "sesiones": 26,
+     "sistemas": {},
+     "usuarios": 0,
+     "utm": {}
+    },
+    "6a3ee6edf60b7518dfe2936f": {
+     "ciudades": {
+      "Bogotá": 1,
+      "Manizales": 2
+     },
+     "dead_clicks": 0,
+     "dispositivos": {},
+     "errores_js": 0,
+     "navegadores": {},
+     "rage_clicks": 0,
+     "sesiones": 3,
+     "sistemas": {},
+     "usuarios": 0,
+     "utm": {}
+    },
+    "6a3fd7b4f60b7518dfe29e00": {
+     "ciudades": {
+      "Medellín": 6
+     },
+     "dead_clicks": 0,
+     "dispositivos": {},
+     "errores_js": 0,
+     "navegadores": {},
+     "rage_clicks": 0,
+     "sesiones": 6,
+     "sistemas": {},
+     "usuarios": 0,
+     "utm": {}
+    },
+    "6a43ed43bf25ef3f2e8cc1fb": {
+     "ciudades": {
+      "(sin ciudad)": 7,
+      "Bogotá": 166,
+      "Buda": 3,
+      "Cali": 3,
+      "Chía": 3,
+      "Dallas": 3,
+      "Guayaquil": 2,
+      "Jacksonville": 2,
+      "Kennedy": 3,
+      "Madrid": 5,
+      "Medellín": 4,
+      "Palmira": 4,
+      "Soacha": 6,
+      "Zipaquirá": 5
+     },
+     "dead_clicks": 0,
+     "dispositivos": {},
+     "errores_js": 0,
+     "navegadores": {},
+     "rage_clicks": 0,
+     "sesiones": 216,
+     "sistemas": {},
+     "usuarios": 0,
+     "utm": {}
+    },
+    "6a4bff1c5dfbf2254a7c3e83": {
+     "ciudades": {
+      "Bogotá": 61,
+      "Chía": 4,
+      "Fontibón": 3,
+      "Medellín": 4,
+      "Soacha": 3
+     },
+     "dead_clicks": 0,
+     "dispositivos": {},
+     "errores_js": 0,
+     "navegadores": {},
+     "rage_clicks": 0,
+     "sesiones": 75,
+     "sistemas": {},
+     "usuarios": 0,
+     "utm": {}
+    }
+   },
+   "fuentes": [
+    "respaldo-julio-mcp"
+   ],
+   "ventana_dias": 3
+  },
+  "2026-08-13": {
+   "capturado": "2026-08-13T21:44:44.785961+00:00",
+   "dominios": {
+    "astickets.online": {
+     "ciudades": {},
+     "dead_clicks": 0,
+     "dispositivos": {},
+     "errores_js": 0,
+     "navegadores": {},
+     "rage_clicks": 0,
+     "sesiones": 1,
+     "sistemas": {},
+     "usuarios": 8,
+     "utm": {
+      "null": 0
+     }
+    },
+    "augetickets.com": {
+     "ciudades": {
+      "Barranquilla": 1,
+      "Bogotá": 42,
+      "Madrid": 1
+     },
+     "dead_clicks": 1,
+     "dispositivos": {
+      "Mobile": 8,
+      "PC": 2
+     },
+     "errores_js": 0,
+     "navegadores": {
+      "Chrome": 2,
+      "ChromeMobile": 7,
+      "InstagramApp": 1
+     },
+     "rage_clicks": 0,
+     "sesiones": 21,
+     "sistemas": {},
+     "usuarios": 16,
+     "utm": {
+      "ig": 4,
+      "www.augetickets.com": 1,
+      "www.facebook.com": 0
+     }
+    },
+    "blast-tickets-abe0b.web.app": {
+     "ciudades": {},
+     "dead_clicks": 0,
+     "dispositivos": {
+      "PC": 2
+     },
+     "errores_js": 0,
+     "navegadores": {
+      "Edge": 2,
+      "Opera": 0
+     },
+     "rage_clicks": 0,
+     "sesiones": 5,
+     "sistemas": {},
+     "usuarios": 6,
+     "utm": {}
+    },
+    "blast-tickets.web.app": {
+     "ciudades": {},
+     "dead_clicks": 0,
+     "dispositivos": {},
+     "errores_js": 0,
+     "navegadores": {},
+     "rage_clicks": 0,
+     "sesiones": 1,
+     "sistemas": {},
+     "usuarios": 1,
+     "utm": {}
+    },
+    "blasttickets.com": {
+     "ciudades": {
+      "Bogotá": 796,
+      "Medellín": 78
+     },
+     "dead_clicks": 767,
+     "dispositivos": {
+      "Mobile": 294,
+      "Other": 0,
+      "PC": 82,
+      "Tablet": 1
+     },
+     "errores_js": 3,
+     "navegadores": {
+      "Chrome": 77,
+      "ChromeMobile": 120,
+      "Edge": 7,
+      "FacebookApp": 50,
+      "Firefox": 0,
+      "GoogleApp": 4,
+      "InstagramApp": 72,
+      "MobileSafari": 39,
+      "Other": 0,
+      "SamsungInternet": 8
+     },
+     "rage_clicks": 117,
+     "sesiones": 469,
+     "sistemas": {},
+     "usuarios": 415,
+     "utm": {
+      "bing": 2,
+      "facebook.com": 5,
+      "google": 95,
+      "ig": 7,
+      "kommo.cc": 2,
+      "l.facebook.com": 1,
+      "l.instagram.com": 22,
+      "linktr.ee": 1,
+      "lm.facebook.com": 10,
+      "m.facebook.com": 20,
+      "transaction-redirect.wompi.co": 2,
+      "www.backoffice.blasttickets.com": 3,
+      "www.bandsintown.com": 2,
+      "www.blasttickets.com": 6,
+      "www.facebook.com": 0
+     }
+    },
+    "elsellotickets.com": {
+     "ciudades": {
+      "Bogotá": 39,
+      "Bucaramanga": 1,
+      "Buenos Aires": 2,
+      "Cartagena": 1,
+      "La Ceja": 1
+     },
+     "dead_clicks": 13,
+     "dispositivos": {
+      "Mobile": 10,
+      "PC": 4
+     },
+     "errores_js": 1,
+     "navegadores": {
+      "Chrome": 1,
+      "ChromeMobile": 9,
+      "Edge": 2,
+      "FacebookApp": 1,
+      "Firefox": 1
+     },
+     "rage_clicks": 0,
+     "sesiones": 22,
+     "sistemas": {},
+     "usuarios": 22,
+     "utm": {
+      "google": 6,
+      "lm.facebook.com": 1,
+      "www.royalcenter.com.co": 1
+     }
+    },
+    "lamtickets.com": {
+     "ciudades": {
+      "Barranquilla": 3,
+      "Bello": 15,
+      "Bogotá": 11,
+      "Medellín": 113
+     },
+     "dead_clicks": 0,
+     "dispositivos": {
+      "Mobile": 63,
+      "Other": 0
+     },
+     "errores_js": 3,
+     "navegadores": {
+      "ChromeMobile": 14,
+      "FacebookApp": 46,
+      "InstagramApp": 3,
+      "Other": 0
+     },
+     "rage_clicks": 0,
+     "sesiones": 26,
+     "sistemas": {},
+     "usuarios": 31,
+     "utm": {
+      "facebook.com": 2,
+      "linktr.ee": 2,
+      "m.facebook.com": 4,
+      "urbanfestmedellin.com": 3,
+      "www.lamtickets.com": 6
+     }
+    },
+    "localhost:4200": {
+     "ciudades": {},
+     "dead_clicks": 0,
+     "dispositivos": {
+      "Mobile": 0,
+      "PC": 0
+     },
+     "errores_js": 0,
+     "navegadores": {
+      "Chrome": 0,
+      "ChromeMobile": 0,
+      "MobileSafari": 0
+     },
+     "rage_clicks": 0,
+     "sesiones": 0,
+     "sistemas": {},
+     "usuarios": 3,
+     "utm": {
+      "localhost": 0
+     }
+    },
+    "localhost:5173": {
+     "ciudades": {},
+     "dead_clicks": 0,
+     "dispositivos": {
+      "PC": 0
+     },
+     "errores_js": 0,
+     "navegadores": {
+      "Chrome": 0
+     },
+     "rage_clicks": 0,
+     "sesiones": 0,
+     "sistemas": {},
+     "usuarios": 2,
+     "utm": {
+      "localhost": 0
+     }
+    },
+    "reboletos.com": {
+     "ciudades": {},
+     "dead_clicks": 0,
+     "dispositivos": {
+      "PC": 1
+     },
+     "errores_js": 0,
+     "navegadores": {
+      "Chrome": 1
+     },
+     "rage_clicks": 0,
+     "sesiones": 0,
+     "sistemas": {},
+     "usuarios": 0,
+     "utm": {}
+    },
+    "sinerror.com": {
+     "ciudades": {
+      "(sin ciudad)": 20,
+      "Barranquilla": 81,
+      "Bogotá": 752,
+      "Cali": 22,
+      "Medellín": 240,
+      "Tunja": 91
+     },
+     "dead_clicks": 68,
+     "dispositivos": {
+      "Mobile": 450,
+      "Other": 0,
+      "PC": 37,
+      "Tablet": 3
+     },
+     "errores_js": 46,
+     "navegadores": {
+      "Chrome": 32,
+      "ChromeMobile": 59,
+      "Edge": 5,
+      "FacebookApp": 308,
+      "GoogleApp": 6,
+      "InstagramApp": 78,
+      "MobileSafari": 2,
+      "Other": 0
+     },
+     "rage_clicks": 9,
+     "sesiones": 470,
+     "sistemas": {},
+     "usuarios": 501,
+     "utm": {
+      "facebook.com": 3,
+      "fb": 282,
+      "google": 25,
+      "ig": 50,
+      "instagram.com": 8,
+      "l.facebook.com": 1,
+      "m.facebook.com": 0,
+      "rupatrupa.com": 18,
+      "transaction-redirect.wompi.co": 2,
+      "www.bandsintown.com": 2,
+      "www.pedropastorguerra.com": 31,
+      "www.sinerror.com": 3
+     }
+    },
+    "supereventosticket.com": {
+     "ciudades": {
+      "(sin ciudad)": 40,
+      "Barranquilla": 90,
+      "Bogotá": 396,
+      "Cali": 60,
+      "Cartagena": 24,
+      "Ibagué": 111,
+      "Medellín": 161
+     },
+     "dead_clicks": 93,
+     "dispositivos": {
+      "Mobile": 406,
+      "Other": 0,
+      "PC": 8,
+      "Tablet": 1
+     },
+     "errores_js": 27,
+     "navegadores": {
+      "Chrome": 3,
+      "ChromeMobile": 201,
+      "Edge": 3,
+      "FacebookApp": 101,
+      "InstagramApp": 99,
+      "MobileSafari": 6,
+      "Other": 0,
+      "Safari": 2
+     },
+     "rage_clicks": 32,
+     "sesiones": 484,
+     "sistemas": {},
+     "usuarios": 518,
+     "utm": {
+      "an": 225,
+      "eventhubsas.com": 3,
+      "facebook.com": 3,
+      "fb": 92,
+      "google": 1,
+      "ig": 99,
+      "instagram.com": 5,
+      "l.instagram.com": 1,
+      "lm.facebook.com": 2,
+      "m.facebook.com": 6,
+      "th": 2,
+      "www.facebook.com": 0,
+      "www.supereventosticket.com": 1
+     }
+    },
+    "taquiya.co": {
+     "ciudades": {
+      "(sin ciudad)": 6,
+      "Barranquilla": 47,
+      "Bogotá": 19,
+      "Cartagena": 72,
+      "Medellín": 6
+     },
+     "dead_clicks": 2,
+     "dispositivos": {
+      "Mobile": 11,
+      "Other": 0,
+      "PC": 13
+     },
+     "errores_js": 0,
+     "navegadores": {
+      "Chrome": 10,
+      "ChromeMobile": 1,
+      "Edge": 3,
+      "EdgeMobile": 2,
+      "FacebookApp": 1,
+      "GoogleApp": 5,
+      "HeadlessChrome": 0,
+      "InstagramApp": 2,
+      "Other": 0
+     },
+     "rage_clicks": 0,
+     "sesiones": 33,
+     "sistemas": {},
+     "usuarios": 32,
+     "utm": {
+      "bing": 2,
+      "google": 7,
+      "ig": 2,
+      "l.wl.co": 4,
+      "m.facebook.com": 7,
+      "transaction-redirect.wompi.co": 2,
+      "www.taquiya.co": 6
+     }
+    },
+    "tickets.3diazproducciones.com": {
+     "ciudades": {
+      "Bogotá": 58,
+      "Ibagué": 30,
+      "Medellín": 9,
+      "Neiva": 22
+     },
+     "dead_clicks": 5,
+     "dispositivos": {
+      "Mobile": 72,
+      "Other": 0,
+      "PC": 3
+     },
+     "errores_js": 0,
+     "navegadores": {
+      "Chrome": 1,
+      "ChromeMobile": 64,
+      "FacebookApp": 6,
+      "Firefox": 2,
+      "GoogleApp": 2,
+      "Other": 0
+     },
+     "rage_clicks": 0,
+     "sesiones": 50,
+     "sistemas": {},
+     "usuarios": 50,
+     "utm": {
+      "google": 3,
+      "lm.facebook.com": 1,
+      "m.facebook.com": 5,
+      "taplink.cc": 1,
+      "tickets.3diazproducciones.com": 0,
+      "www.3diazproducciones.com": 3,
+      "www.teatrotolima.com": 3,
+      "www.tickets.3diazproducciones.com": 1
+     }
+    },
+    "tickets.gerizimproducciones.com": {
+     "ciudades": {},
+     "dead_clicks": 0,
+     "dispositivos": {
+      "Other": 0
+     },
+     "errores_js": 0,
+     "navegadores": {
+      "Other": 0
+     },
+     "rage_clicks": 0,
+     "sesiones": 0,
+     "sistemas": {},
+     "usuarios": 0,
+     "utm": {}
+    },
+    "ventas.ticketplatino.com": {
+     "ciudades": {},
+     "dead_clicks": 0,
+     "dispositivos": {},
+     "errores_js": 0,
+     "navegadores": {},
+     "rage_clicks": 0,
+     "sesiones": 2,
+     "sistemas": {},
+     "usuarios": 3,
+     "utm": {
+      "ticketplatino.com": 2
+     }
+    }
+   },
+   "eventos": {
+    "672fcd0b14cb224d4652869f": {
+     "ciudades": {},
+     "dead_clicks": 0,
+     "dispositivos": {
+      "Mobile": 1
+     },
+     "errores_js": 0,
+     "navegadores": {
+      "ChromeMobile": 1
+     },
+     "rage_clicks": 0,
+     "sesiones": 1,
+     "sistemas": {},
+     "usuarios": 1,
+     "utm": {}
+    },
+    "679d7c1c86b0c5f5461d207a": {
+     "ciudades": {},
+     "dead_clicks": 0,
+     "dispositivos": {},
+     "errores_js": 0,
+     "navegadores": {},
+     "rage_clicks": 0,
+     "sesiones": 0,
+     "sistemas": {},
+     "usuarios": 0,
+     "utm": {
+      "google": 1
+     }
+    },
+    "67ddf63eaec01d64dbbc588d": {
+     "ciudades": {},
+     "dead_clicks": 0,
+     "dispositivos": {
+      "Other": 0
+     },
+     "errores_js": 0,
+     "navegadores": {
+      "Other": 0
+     },
+     "rage_clicks": 0,
+     "sesiones": 0,
+     "sistemas": {},
+     "usuarios": 1,
+     "utm": {}
+    },
+    "67eab8b489f45854b33a27c2": {
+     "ciudades": {},
+     "dead_clicks": 0,
+     "dispositivos": {},
+     "errores_js": 0,
+     "navegadores": {},
+     "rage_clicks": 0,
+     "sesiones": 1,
+     "sistemas": {},
+     "usuarios": 1,
+     "utm": {
+      "m.facebook.com": 1
+     }
+    },
+    "67eb04b0d120df6db1146391": {
+     "ciudades": {},
+     "dead_clicks": 1,
+     "dispositivos": {},
+     "errores_js": 0,
+     "navegadores": {},
+     "rage_clicks": 0,
+     "sesiones": 1,
+     "sistemas": {},
+     "usuarios": 1,
+     "utm": {}
+    },
+    "67f04a46e02680066a9b89c3": {
+     "ciudades": {},
+     "dead_clicks": 0,
+     "dispositivos": {
+      "Mobile": 1
+     },
+     "errores_js": 0,
+     "navegadores": {
+      "ChromeMobile": 1
+     },
+     "rage_clicks": 0,
+     "sesiones": 0,
+     "sistemas": {},
+     "usuarios": 0,
+     "utm": {}
+    },
+    "67f6cf33ea685818e00a03d5": {
+     "ciudades": {},
+     "dead_clicks": 0,
+     "dispositivos": {
+      "Mobile": 1
+     },
+     "errores_js": 0,
+     "navegadores": {
+      "ChromeMobile": 1
+     },
+     "rage_clicks": 0,
+     "sesiones": 0,
+     "sistemas": {},
+     "usuarios": 0,
+     "utm": {}
+    },
+    "688be6acc9c10d2de706dcd2": {
+     "ciudades": {},
+     "dead_clicks": 0,
+     "dispositivos": {},
+     "errores_js": 0,
+     "navegadores": {},
+     "rage_clicks": 0,
+     "sesiones": 0,
+     "sistemas": {},
+     "usuarios": 1,
+     "utm": {}
+    },
+    "68a14b5a6f664071184fe5fb": {
+     "ciudades": {},
+     "dead_clicks": 0,
+     "dispositivos": {
+      "PC": 0
+     },
+     "errores_js": 0,
+     "navegadores": {
+      "Chrome": 0
+     },
+     "rage_clicks": 0,
+     "sesiones": 0,
+     "sistemas": {},
+     "usuarios": 0,
+     "utm": {
+      "www.facebook.com": 0
+     }
+    },
+    "68d6f975b9c8285b99ac5f10": {
+     "ciudades": {},
+     "dead_clicks": 0,
+     "dispositivos": {},
+     "errores_js": 0,
+     "navegadores": {},
+     "rage_clicks": 0,
+     "sesiones": 0,
+     "sistemas": {},
+     "usuarios": 1,
+     "utm": {}
+    },
+    "692f8efe1a3b7e1727e24ff2": {
+     "ciudades": {},
+     "dead_clicks": 0,
+     "dispositivos": {
+      "Mobile": 1
+     },
+     "errores_js": 0,
+     "navegadores": {
+      "ChromeMobile": 1
+     },
+     "rage_clicks": 0,
+     "sesiones": 0,
+     "sistemas": {},
+     "usuarios": 0,
+     "utm": {}
+    },
+    "69319bbcc2187a1b322b2c4d": {
+     "ciudades": {},
+     "dead_clicks": 0,
+     "dispositivos": {
+      "PC": 0
+     },
+     "errores_js": 0,
+     "navegadores": {
+      "Chrome": 0
+     },
+     "rage_clicks": 0,
+     "sesiones": 0,
+     "sistemas": {},
+     "usuarios": 0,
+     "utm": {}
+    },
+    "6939a15f9aff4963f7d16b46": {
+     "ciudades": {},
+     "dead_clicks": 0,
+     "dispositivos": {},
+     "errores_js": 0,
+     "navegadores": {},
+     "rage_clicks": 0,
+     "sesiones": 0,
+     "sistemas": {},
+     "usuarios": 0,
+     "utm": {
+      "m.facebook.com": 1
+     }
+    },
+    "693a3090750d9004468a306f": {
+     "ciudades": {},
+     "dead_clicks": 0,
+     "dispositivos": {
+      "Other": 0
+     },
+     "errores_js": 0,
+     "navegadores": {
+      "Other": 0
+     },
+     "rage_clicks": 0,
+     "sesiones": 0,
+     "sistemas": {},
+     "usuarios": 1,
+     "utm": {}
+    },
+    "69434513b6518228c57e4e25": {
+     "ciudades": {},
+     "dead_clicks": 0,
+     "dispositivos": {
+      "Other": 0
+     },
+     "errores_js": 0,
+     "navegadores": {
+      "Other": 0
+     },
+     "rage_clicks": 0,
+     "sesiones": 0,
+     "sistemas": {},
+     "usuarios": 0,
+     "utm": {}
+    },
+    "6946e83e316cd81e583a7d1d": {
+     "ciudades": {
+      "(sin ciudad)": 40,
+      "Barranquilla": 53,
+      "Bogotá": 314,
+      "Cali": 60,
+      "Ibagué": 111,
+      "Medellín": 130
+     },
+     "dead_clicks": 79,
+     "dispositivos": {
+      "Mobile": 319,
+      "PC": 3,
+      "Tablet": 1
+     },
+     "errores_js": 20,
+     "navegadores": {
+      "Chrome": 3,
+      "ChromeMobile": 199,
+      "FacebookApp": 34,
+      "InstagramApp": 81,
+      "MobileSafari": 6
+     },
+     "rage_clicks": 27,
+     "sesiones": 375,
+     "sistemas": {},
+     "usuarios": 387,
+     "utm": {
+      "an": 225,
+      "facebook.com": 1,
+      "fb": 38,
+      "ig": 86,
+      "instagram.com": 1,
+      "lm.facebook.com": 2,
+      "m.facebook.com": 3,
+      "th": 2
+     }
+    },
+    "6973b791fe16082beea12fd5": {
+     "ciudades": {},
+     "dead_clicks": 0,
+     "dispositivos": {
+      "Mobile": 1
+     },
+     "errores_js": 0,
+     "navegadores": {
+      "ChromeMobile": 1
+     },
+     "rage_clicks": 0,
+     "sesiones": 0,
+     "sistemas": {},
+     "usuarios": 0,
+     "utm": {}
+    },
+    "697abd75fe16082beea162d6": {
+     "ciudades": {
+      "Medellín": 3
+     },
+     "dead_clicks": 0,
+     "dispositivos": {
+      "Mobile": 5
+     },
+     "errores_js": 0,
+     "navegadores": {
+      "ChromeMobile": 1,
+      "FacebookApp": 4
+     },
+     "rage_clicks": 0,
+     "sesiones": 2,
+     "sistemas": {},
+     "usuarios": 2,
+     "utm": {}
+    },
+    "698230aadcc0a374dc9afcaa": {
+     "ciudades": {},
+     "dead_clicks": 0,
+     "dispositivos": {
+      "Mobile": 1
+     },
+     "errores_js": 0,
+     "navegadores": {
+      "ChromeMobile": 1
+     },
+     "rage_clicks": 0,
+     "sesiones": 1,
+     "sistemas": {},
+     "usuarios": 1,
+     "utm": {}
+    },
+    "698a0c827123bf0e657db439": {
+     "ciudades": {},
+     "dead_clicks": 0,
+     "dispositivos": {},
+     "errores_js": 0,
+     "navegadores": {},
+     "rage_clicks": 0,
+     "sesiones": 0,
+     "sistemas": {},
+     "usuarios": 1,
+     "utm": {}
+    },
+    "698b696f7123bf0e657dbbe1": {
+     "ciudades": {},
+     "dead_clicks": 0,
+     "dispositivos": {
+      "Other": 0
+     },
+     "errores_js": 0,
+     "navegadores": {
+      "Other": 0
+     },
+     "rage_clicks": 0,
+     "sesiones": 0,
+     "sistemas": {},
+     "usuarios": 0,
+     "utm": {}
+    },
+    "69ba9f32abcbcb520050a194": {
+     "ciudades": {
+      "Barranquilla": 25,
+      "Bogotá": 9,
+      "Cartagena": 31,
+      "Medellín": 6
+     },
+     "dead_clicks": 0,
+     "dispositivos": {
+      "Mobile": 4
+     },
+     "errores_js": 0,
+     "navegadores": {
+      "GoogleApp": 4
+     },
+     "rage_clicks": 0,
+     "sesiones": 0,
+     "sistemas": {},
+     "usuarios": 0,
+     "utm": {
+      "m.facebook.com": 2
+     }
+    },
+    "69cb0a16423b115decc727bb": {
+     "ciudades": {
+      "Bogotá": 14,
+      "Bucaramanga": 1,
+      "Buenos Aires": 1,
+      "Cartagena": 1
+     },
+     "dead_clicks": 1,
+     "dispositivos": {
+      "Mobile": 1,
+      "PC": 2
+     },
+     "errores_js": 0,
+     "navegadores": {
+      "Edge": 1,
+      "FacebookApp": 1,
+      "Firefox": 1
+     },
+     "rage_clicks": 0,
+     "sesiones": 18,
+     "sistemas": {},
+     "usuarios": 18,
+     "utm": {
+      "www.royalcenter.com.co": 1
+     }
+    },
+    "69d6df66cce61a50e2f3d677": {
+     "ciudades": {
+      "Bogotá": 4
+     },
+     "dead_clicks": 0,
+     "dispositivos": {
+      "PC": 1
+     },
+     "errores_js": 0,
+     "navegadores": {
+      "Edge": 1
+     },
+     "rage_clicks": 0,
+     "sesiones": 1,
+     "sistemas": {},
+     "usuarios": 1,
+     "utm": {
+      "google": 3
+     }
+    },
+    "69dd229eaa84bc5a50ffcd00": {
+     "ciudades": {},
+     "dead_clicks": 0,
+     "dispositivos": {},
+     "errores_js": 0,
+     "navegadores": {},
+     "rage_clicks": 0,
+     "sesiones": 0,
+     "sistemas": {},
+     "usuarios": 0,
+     "utm": {
+      "taplink.cc": 1
+     }
+    },
+    "69dfff859581af71e646fdd1": {
+     "ciudades": {},
+     "dead_clicks": 0,
+     "dispositivos": {
+      "PC": 2
+     },
+     "errores_js": 0,
+     "navegadores": {
+      "Chrome": 2
+     },
+     "rage_clicks": 0,
+     "sesiones": 0,
+     "sistemas": {},
+     "usuarios": 0,
+     "utm": {
+      "google": 5
+     }
+    },
+    "69e00ff79581af71e646ffce": {
+     "ciudades": {},
+     "dead_clicks": 7,
+     "dispositivos": {
+      "Mobile": 40,
+      "Other": 0,
+      "PC": 8
+     },
+     "errores_js": 3,
+     "navegadores": {
+      "Chrome": 8,
+      "ChromeMobile": 10,
+      "FacebookApp": 28,
+      "InstagramApp": 2,
+      "Other": 0
+     },
+     "rage_clicks": 0,
+     "sesiones": 35,
+     "sistemas": {},
+     "usuarios": 37,
+     "utm": {
+      "fb": 19,
+      "google": 3,
+      "ig": 3,
+      "instagram.com": 4,
+      "www.bandsintown.com": 2,
+      "www.pedropastorguerra.com": 22
+     }
+    },
+    "69e78a6b39597949e473811c": {
+     "ciudades": {},
+     "dead_clicks": 0,
+     "dispositivos": {},
+     "errores_js": 0,
+     "navegadores": {},
+     "rage_clicks": 0,
+     "sesiones": 0,
+     "sistemas": {},
+     "usuarios": 0,
+     "utm": {
+      "ticketplatino.com": 2
+     }
+    },
+    "69eabde7639fc224e9a2ed53": {
+     "ciudades": {},
+     "dead_clicks": 0,
+     "dispositivos": {
+      "Mobile": 1
+     },
+     "errores_js": 0,
+     "navegadores": {
+      "InstagramApp": 1
+     },
+     "rage_clicks": 0,
+     "sesiones": 0,
+     "sistemas": {},
+     "usuarios": 0,
+     "utm": {}
+    },
+    "69f2844d2b0f632110e41200": {
+     "ciudades": {
+      "Bogotá": 61
+     },
+     "dead_clicks": 38,
+     "dispositivos": {
+      "PC": 26
+     },
+     "errores_js": 0,
+     "navegadores": {
+      "Chrome": 21,
+      "Edge": 5,
+      "Firefox": 0
+     },
+     "rage_clicks": 0,
+     "sesiones": 123,
+     "sistemas": {},
+     "usuarios": 106,
+     "utm": {
+      "google": 5,
+      "l.instagram.com": 1
+     }
+    },
+    "69f2872d2b0f632110e4125e": {
+     "ciudades": {},
+     "dead_clicks": 0,
+     "dispositivos": {},
+     "errores_js": 0,
+     "navegadores": {},
+     "rage_clicks": 0,
+     "sesiones": 1,
+     "sistemas": {},
+     "usuarios": 1,
+     "utm": {}
+    },
+    "6a0e0bcf8445bc2fc2649c4f": {
+     "ciudades": {
+      "Medellín": 5
+     },
+     "dead_clicks": 0,
+     "dispositivos": {},
+     "errores_js": 0,
+     "navegadores": {},
+     "rage_clicks": 0,
+     "sesiones": 0,
+     "sistemas": {},
+     "usuarios": 0,
+     "utm": {}
+    },
+    "6a1621023e193471338a8820": {
+     "ciudades": {},
+     "dead_clicks": 0,
+     "dispositivos": {},
+     "errores_js": 0,
+     "navegadores": {},
+     "rage_clicks": 0,
+     "sesiones": 0,
+     "sistemas": {},
+     "usuarios": 0,
+     "utm": {
+      "www.teatrotolima.com": 1
+     }
+    },
+    "6a1f70f87e82b422f858356c": {
+     "ciudades": {},
+     "dead_clicks": 0,
+     "dispositivos": {
+      "PC": 2
+     },
+     "errores_js": 0,
+     "navegadores": {
+      "Firefox": 2
+     },
+     "rage_clicks": 0,
+     "sesiones": 0,
+     "sistemas": {},
+     "usuarios": 0,
+     "utm": {
+      "www.3diazproducciones.com": 3
+     }
+    },
+    "6a1f712f7e82b422f8583575": {
+     "ciudades": {},
+     "dead_clicks": 0,
+     "dispositivos": {
+      "PC": 0
+     },
+     "errores_js": 0,
+     "navegadores": {
+      "Chrome": 0
+     },
+     "rage_clicks": 0,
+     "sesiones": 0,
+     "sistemas": {},
+     "usuarios": 0,
+     "utm": {}
+    },
+    "6a207a817e82b422f858517c": {
+     "ciudades": {},
+     "dead_clicks": 0,
+     "dispositivos": {
+      "Mobile": 4
+     },
+     "errores_js": 0,
+     "navegadores": {
+      "MobileSafari": 4
+     },
+     "rage_clicks": 0,
+     "sesiones": 0,
+     "sistemas": {},
+     "usuarios": 0,
+     "utm": {
+      "bing": 0
+     }
+    },
+    "6a22f2fbef7a6958a3ed84e1": {
+     "ciudades": {},
+     "dead_clicks": 0,
+     "dispositivos": {
+      "PC": 0
+     },
+     "errores_js": 0,
+     "navegadores": {
+      "Chrome": 0
+     },
+     "rage_clicks": 0,
+     "sesiones": 1,
+     "sistemas": {},
+     "usuarios": 2,
+     "utm": {}
+    },
+    "6a2b033c1fc3665ce3206392": {
+     "ciudades": {
+      "Bello": 8,
+      "Bogotá": 8,
+      "Medellín": 41
+     },
+     "dead_clicks": 0,
+     "dispositivos": {
+      "Mobile": 38
+     },
+     "errores_js": 0,
+     "navegadores": {
+      "ChromeMobile": 13,
+      "FacebookApp": 25
+     },
+     "rage_clicks": 0,
+     "sesiones": 1,
+     "sistemas": {},
+     "usuarios": 1,
+     "utm": {}
+    },
+    "6a2c2f221fc3665ce32080ef": {
+     "ciudades": {
+      "Bogotá": 59
+     },
+     "dead_clicks": 27,
+     "dispositivos": {
+      "Mobile": 11
+     },
+     "errores_js": 1,
+     "navegadores": {
+      "InstagramApp": 4,
+      "SamsungInternet": 7
+     },
+     "rage_clicks": 0,
+     "sesiones": 58,
+     "sistemas": {},
+     "usuarios": 47,
+     "utm": {
+      "google": 5,
+      "l.instagram.com": 6,
+      "www.facebook.com": 0
+     }
+    },
+    "6a397b933481881953a69f80": {
+     "ciudades": {
+      "Bogotá": 501
+     },
+     "dead_clicks": 48,
+     "dispositivos": {
+      "Mobile": 144
+     },
+     "errores_js": 23,
+     "navegadores": {
+      "FacebookApp": 144,
+      "MobileSafari": 0
+     },
+     "rage_clicks": 9,
+     "sesiones": 199,
+     "sistemas": {},
+     "usuarios": 213,
+     "utm": {
+      "fb": 150
+     }
+    },
+    "6a397d133481881953a69f9e": {
+     "ciudades": {
+      "(sin ciudad)": 20,
+      "Barranquilla": 81,
+      "Cali": 22,
+      "Medellín": 240
+     },
+     "dead_clicks": 10,
+     "dispositivos": {
+      "Mobile": 126,
+      "PC": 1,
+      "Tablet": 1
+     },
+     "errores_js": 11,
+     "navegadores": {
+      "Chrome": 1,
+      "FacebookApp": 127,
+      "MobileSafari": 0
+     },
+     "rage_clicks": 0,
+     "sesiones": 106,
+     "sistemas": {},
+     "usuarios": 118,
+     "utm": {
+      "fb": 108,
+      "m.facebook.com": 0
+     }
+    },
+    "6a39b97d60a1293707f785dc": {
+     "ciudades": {
+      "Bogotá": 131,
+      "Tunja": 91
+     },
+     "dead_clicks": 2,
+     "dispositivos": {
+      "Mobile": 102,
+      "Other": 0,
+      "Tablet": 1
+     },
+     "errores_js": 9,
+     "navegadores": {
+      "ChromeMobile": 41,
+      "FacebookApp": 8,
+      "GoogleApp": 3,
+      "InstagramApp": 51,
+      "Other": 0
+     },
+     "rage_clicks": 0,
+     "sesiones": 72,
+     "sistemas": {},
+     "usuarios": 75,
+     "utm": {
+      "fb": 5,
+      "google": 7,
+      "ig": 47,
+      "l.facebook.com": 1,
+      "rupatrupa.com": 3
+     }
+    },
+    "6a39bbe960a1293707f7864f": {
+     "ciudades": {
+      "Bogotá": 70
+     },
+     "dead_clicks": 0,
+     "dispositivos": {
+      "Mobile": 3,
+      "PC": 4
+     },
+     "errores_js": 0,
+     "navegadores": {
+      "Edge": 4,
+      "GoogleApp": 3
+     },
+     "rage_clicks": 0,
+     "sesiones": 0,
+     "sistemas": {},
+     "usuarios": 0,
+     "utm": {}
+    },
+    "6a3c894e784a5642fd1a0e22": {
+     "ciudades": {},
+     "dead_clicks": 0,
+     "dispositivos": {
+      "PC": 0
+     },
+     "errores_js": 0,
+     "navegadores": {
+      "Chrome": 0
+     },
+     "rage_clicks": 0,
+     "sesiones": 1,
+     "sistemas": {},
+     "usuarios": 1,
+     "utm": {}
+    },
+    "6a3dac145d626314c9b28bdb": {
+     "ciudades": {
+      "Bogotá": 3
+     },
+     "dead_clicks": 0,
+     "dispositivos": {},
+     "errores_js": 0,
+     "navegadores": {},
+     "rage_clicks": 0,
+     "sesiones": 0,
+     "sistemas": {},
+     "usuarios": 0,
+     "utm": {
+      "lm.facebook.com": 1
+     }
+    },
+    "6a3fd7b4f60b7518dfe29e00": {
+     "ciudades": {
+      "Medellín": 78
+     },
+     "dead_clicks": 9,
+     "dispositivos": {
+      "Mobile": 21,
+      "PC": 5
+     },
+     "errores_js": 1,
+     "navegadores": {
+      "Chrome": 4,
+      "ChromeMobile": 2,
+      "Edge": 1,
+      "InstagramApp": 11,
+      "MobileSafari": 8
+     },
+     "rage_clicks": 0,
+     "sesiones": 23,
+     "sistemas": {},
+     "usuarios": 27,
+     "utm": {
+      "google": 2,
+      "ig": 7,
+      "l.instagram.com": 2,
+      "m.facebook.com": 0,
+      "www.blasttickets.com": 1,
+      "www.facebook.com": 0
+     }
+    },
+    "6a43ed43bf25ef3f2e8cc1fb": {
+     "ciudades": {},
+     "dead_clicks": 0,
+     "dispositivos": {
+      "Mobile": 8,
+      "PC": 1
+     },
+     "errores_js": 0,
+     "navegadores": {
+      "ChromeMobile": 7,
+      "Edge": 1,
+      "InstagramApp": 1
+     },
+     "rage_clicks": 0,
+     "sesiones": 0,
+     "sistemas": {},
+     "usuarios": 0,
+     "utm": {
+      "l.instagram.com": 1,
+      "www.bandsintown.com": 2
+     }
+    },
+    "6a4431c9bf25ef3f2e8cc95e": {
+     "ciudades": {
+      "Bogotá": 37,
+      "Ibagué": 24,
+      "Medellín": 6
+     },
+     "dead_clicks": 0,
+     "dispositivos": {
+      "Mobile": 35,
+      "Other": 0
+     },
+     "errores_js": 0,
+     "navegadores": {
+      "ChromeMobile": 35,
+      "FacebookApp": 0
+     },
+     "rage_clicks": 0,
+     "sesiones": 0,
+     "sistemas": {},
+     "usuarios": 1,
+     "utm": {
+      "google": 3,
+      "m.facebook.com": 1,
+      "www.teatrotolima.com": 2,
+      "www.tickets.3diazproducciones.com": 1
+     }
+    },
+    "6a4432eebf25ef3f2e8cc973": {
+     "ciudades": {},
+     "dead_clicks": 0,
+     "dispositivos": {
+      "Mobile": 1,
+      "PC": 1
+     },
+     "errores_js": 0,
+     "navegadores": {
+      "Chrome": 1,
+      "FacebookApp": 1
+     },
+     "rage_clicks": 0,
+     "sesiones": 0,
+     "sistemas": {},
+     "usuarios": 0,
+     "utm": {
+      "m.facebook.com": 1
+     }
+    },
+    "6a443359bf25ef3f2e8cc980": {
+     "ciudades": {},
+     "dead_clicks": 0,
+     "dispositivos": {},
+     "errores_js": 0,
+     "navegadores": {},
+     "rage_clicks": 0,
+     "sesiones": 0,
+     "sistemas": {},
+     "usuarios": 0,
+     "utm": {
+      "lm.facebook.com": 1
+     }
+    },
+    "6a4bff1c5dfbf2254a7c3e83": {
+     "ciudades": {
+      "Bogotá": 167
+     },
+     "dead_clicks": 10,
+     "dispositivos": {
+      "Mobile": 29,
+      "PC": 24,
+      "Tablet": 1
+     },
+     "errores_js": 0,
+     "navegadores": {
+      "Chrome": 24,
+      "ChromeMobile": 2,
+      "FacebookApp": 28
+     },
+     "rage_clicks": 0,
+     "sesiones": 3,
+     "sistemas": {},
+     "usuarios": 3,
+     "utm": {
+      "bing": 1,
+      "google": 2,
+      "lm.facebook.com": 4
+     }
+    },
+    "6a4ee4285dfbf2254a7c704c": {
+     "ciudades": {
+      "Bogotá": 7,
+      "Neiva": 9
+     },
+     "dead_clicks": 0,
+     "dispositivos": {
+      "Mobile": 7
+     },
+     "errores_js": 0,
+     "navegadores": {
+      "ChromeMobile": 7
+     },
+     "rage_clicks": 0,
+     "sesiones": 0,
+     "sistemas": {},
+     "usuarios": 0,
+     "utm": {}
+    },
+    "6a5415ea5dfbf2254a7d1b56": {
+     "ciudades": {
+      "Bogotá": 20
+     },
+     "dead_clicks": 0,
+     "dispositivos": {
+      "Mobile": 4,
+      "PC": 1
+     },
+     "errores_js": 0,
+     "navegadores": {
+      "Chrome": 1,
+      "ChromeMobile": 3,
+      "InstagramApp": 1
+     },
+     "rage_clicks": 0,
+     "sesiones": 1,
+     "sistemas": {},
+     "usuarios": 1,
+     "utm": {
+      "ig": 4
+     }
+    },
+    "6a580ca95dfbf2254a7dc77d": {
+     "ciudades": {
+      "Bogotá": 69
+     },
+     "dead_clicks": 671,
+     "dispositivos": {
+      "Mobile": 7
+     },
+     "errores_js": 0,
+     "navegadores": {
+      "ChromeMobile": 7
+     },
+     "rage_clicks": 117,
+     "sesiones": 91,
+     "sistemas": {},
+     "usuarios": 66,
+     "utm": {
+      "lm.facebook.com": 1
+     }
+    },
+    "6a580ead5dfbf2254a7dc7fc": {
+     "ciudades": {},
+     "dead_clicks": 0,
+     "dispositivos": {
+      "Mobile": 2
+     },
+     "errores_js": 0,
+     "navegadores": {
+      "ChromeMobile": 1,
+      "InstagramApp": 1
+     },
+     "rage_clicks": 0,
+     "sesiones": 0,
+     "sistemas": {},
+     "usuarios": 0,
+     "utm": {
+      "l.instagram.com": 1
+     }
+    },
+    "6a5fe4af4285372b1e9f1c16": {
+     "ciudades": {},
+     "dead_clicks": 0,
+     "dispositivos": {
+      "Other": 0,
+      "PC": 1
+     },
+     "errores_js": 0,
+     "navegadores": {
+      "Edge": 0,
+      "Other": 0,
+      "Safari": 1
+     },
+     "rage_clicks": 0,
+     "sesiones": 0,
+     "sistemas": {},
+     "usuarios": 0,
+     "utm": {
+      "www.facebook.com": 0
+     }
+    },
+    "6a77b503627f3b1a1cb5d683": {
+     "ciudades": {
+      "Bogotá": 6,
+      "Madrid": 1
+     },
+     "dead_clicks": 1,
+     "dispositivos": {},
+     "errores_js": 0,
+     "navegadores": {},
+     "rage_clicks": 0,
+     "sesiones": 7,
+     "sistemas": {},
+     "usuarios": 3,
+     "utm": {}
+    }
+   },
+   "fuentes": [
+    "cachés-vigentes",
+    "mcp-mapa"
+   ],
+   "ventana_dias": 3
+  }
+ },
+ "version": 1
+}

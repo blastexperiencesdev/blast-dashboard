@@ -1,0 +1,65 @@
+name: Clarity — capturar día al histórico
+
+# Clarity solo conserva 3 días. Esta captura diaria construye la memoria larga
+# que él no tiene: cada corrida guarda UN día natural en historial_clarity.json
+# y lo commitea, así que la serie sobrevive a la ventana móvil.
+#
+# Por qué numOfDays=1 y no 3: las ventanas de 3 días se solapan entre corridas
+# consecutivas y sumarlas contaría el mismo tráfico varias veces. Un día limpio
+# por registro sí es sumable.
+#
+# Corre a las 06:10 UTC = 01:10 en Colombia, para que la ventana de las últimas
+# 24 h cubra el día anterior ya cerrado.
+#
+# Cupo de la API de Clarity: 10 peticiones por proyecto por día. Esto gasta 1.
+# El refresco de los cachés (clarity_refresh.py) gasta 4 más si se corre.
+#
+# OJO — el mapa de ciudades NO entra aquí: la Data Export API no expone
+# ciudades (su dimensión más fina es Country/Region). Ese desglose solo lo da
+# el MCP de Clarity y se siembra de forma asistida con
+# tools/clarity_sembrar_mapa.py.
+
+on:
+  schedule:
+    - cron: "10 6 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: clarity-historial
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  capturar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Capturar el día en el histórico
+        env:
+          CLARITY_API_TOKEN: ${{ secrets.CLARITY_API_TOKEN }}
+        run: |
+          # El script lee el token del .env; en CI llega por secret.
+          printf 'CLARITY_API_TOKEN=%s\n' "$CLARITY_API_TOKEN" > .env
+          python3 tools/clarity_historial.py --capturar
+          python3 tools/clarity_historial.py --estado
+          rm -f .env
+
+      - name: Commitear si hubo cambios
+        run: |
+          if git diff --quiet -- historial_clarity.json; then
+            echo "Sin cambios en el histórico."
+            exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add historial_clarity.json
+          git commit -m "Clarity: captura diaria del histórico ($(date -u +%F))"
+          git push
