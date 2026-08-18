@@ -281,12 +281,16 @@
   </div>
 
   <div class="card" style="margin-top:14px">
-    <h2>🎯 Carritos abandonados con datos de comprador — lista de ataque
+    <h2 id="abtoggle" style="cursor:pointer;user-select:none">
+      🎯 Carritos abandonados con datos de comprador — lista de ataque
+      <span id="abchevron" style="margin-left:8px;font-size:14px;opacity:.6">▼</span>
       <button id="csvbtn" style="margin-left:auto;font-size:12.5px;padding:6px 12px">Descargar CSV</button>
     </h2>
-    <div class="kpis" id="abkpis" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))"></div>
-    <div style="max-height:420px;overflow-y:auto;margin-top:12px"><table id="abtable"></table></div>
-    <div class="nota">Compradores que llenaron sus datos en el checkout y no completaron el pago, ordenados por valor. Un mismo email aparece una vez (su carrito de mayor valor).</div>
+    <div id="abcuerpo">
+      <div class="kpis" id="abkpis" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))"></div>
+      <div style="max-height:420px;overflow-y:auto;margin-top:12px"><table id="abtable"></table></div>
+      <div class="nota">Compradores que llenaron sus datos en el checkout y no completaron el pago, ordenados por valor. Un mismo email aparece una vez (su carrito de mayor valor).</div>
+    </div>
   </div>
 
   <!-- 4. Funnel de compra + por qué se pierden -->
@@ -854,6 +858,24 @@ $("abtable").addEventListener("click", (e) => {
     if (contacto) contactarWati(btn, contacto);
   }
 });
+
+/* toggle carritos abandonados */
+(function () {
+  const cuerpo = $("abcuerpo");
+  const chevron = $("abchevron");
+  const abierto = localStorage.getItem("ab_panel") !== "cerrado";
+  const aplicar = (abierto) => {
+    cuerpo.style.display = abierto ? "" : "none";
+    chevron.textContent = abierto ? "▼" : "▶";
+  };
+  aplicar(abierto);
+  $("abtoggle").addEventListener("click", (e) => {
+    if (e.target.id === "csvbtn") return;
+    const nuevo = cuerpo.style.display === "none";
+    localStorage.setItem("ab_panel", nuevo ? "abierto" : "cerrado");
+    aplicar(nuevo);
+  });
+})();
 
 $("csvbtn").addEventListener("click", () => {
   if (!abandonadosData.length) return;
