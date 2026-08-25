@@ -31,6 +31,8 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from pymongo import MongoClient
 
+import auth
+
 BASE = Path(__file__).resolve().parent
 CLARITY_CACHE = BASE / "clarity_cache.json"
 CLARITY_TTL_SECONDS = 3 * 3600
@@ -67,6 +69,7 @@ def load_env():
     for key in (
         "MONGODB_URI", "CLARITY_API_TOKEN", "WATI_API_TOKEN",
         "KV_REST_API_URL", "KV_REST_API_TOKEN",
+        "CUSTOMER_LAB_USERS", "SESSION_SECRET",
     ):
         if key in os.environ:
             out[key] = os.environ[key]
@@ -1500,3 +1503,7 @@ def index():
 
 
 app.mount("/static", StaticFiles(directory=BASE / "static"), name="static")
+
+# El guardia de sesión se monta al final para que su middleware envuelva
+# también los archivos servidos desde /static.
+auth.montar(app, ENV)

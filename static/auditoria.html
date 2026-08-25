@@ -129,6 +129,7 @@
   <h1>🎫 Auditoría de Tickets</h1>
   <a class="back" href="/">← Volver al dashboard</a>
   <span id="updated">cargando…</span>
+  <a class="back" href="/logout" title="Cerrar sesión">Salir</a>
 </header>
 <main>
 
@@ -237,6 +238,10 @@ async function cargar() {
   let r;
   try {
     r = await fetch("/api/auditoria?" + params());
+    if (r.status === 401) {
+      location.href = "/login?next=" + encodeURIComponent(location.pathname);
+      return;
+    }
   } catch (e) {
     $("updated").textContent = "sin conexión";
     return;

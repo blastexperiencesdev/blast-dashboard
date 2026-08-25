@@ -212,6 +212,7 @@
   <h1>Customer Lab</h1>
   <a class="nav" href="/auditoria">🎫 Auditoría de tickets →</a>
   <span id="updated">cargando…</span>
+  <a class="nav" href="/logout" title="Cerrar sesión">Salir</a>
 </header>
 
 <div class="filtros">
@@ -393,6 +394,14 @@ function qs(extra = {}) {
 
 async function getJSON(url) {
   const r = await fetch(url);
+  // 401 = la sesión venció mientras el tablero estaba abierto. Se manda al
+  // login en vez de pintar un error que no le dice nada a nadie. La promesa
+  // que nunca resuelve evita que los paneles alcancen a mostrar "⚠️" durante
+  // el instante que tarda la navegación.
+  if (r.status === 401) {
+    location.href = "/login?next=" + encodeURIComponent(location.pathname + location.search);
+    return new Promise(() => {});
+  }
   if (!r.ok) throw new Error((await r.json().catch(() => ({}))).detail || r.statusText);
   return r.json();
 }
